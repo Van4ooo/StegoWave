@@ -1,6 +1,14 @@
-[package]
-name = "StegoWave"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+resolver = "2"
+members = [
+    "app",
+    "stego_wave"
+]
 
-[dependencies]
+[workspace.package]
+version = "0.0.1"
+authors = ["Ivan Rybachyk <ivan2005rubachyk@gmail.com>"]
+edition = "2024"
+license = "Apache-2.0"
+license-file = "./LICENSE"
+description = "Audio file steganography with Client / Server gRPC writen on Rust 🦀"

@@ -1,0 +1,8 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+stego_wave = {path = "../stego_wave"}
