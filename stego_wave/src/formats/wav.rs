@@ -133,7 +133,6 @@ impl WAV16 {
                 break;
             }
         }
-        println!("{:?}", header_bytes);
 
         if header_bytes != HEADER.as_bytes() {
             return Err(StegoError::IncorrectPassword);
@@ -285,6 +284,17 @@ impl AudioSteganography<i16> for WAV16 {
     /// # Errors
     ///
     /// Returns an error if extraction fails or if the password is incorrect.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography};
+    /// let mut samples = vec![8; 1_000];
+    /// let wav = WAV16::default();
+    /// wav.hide_message_binary(&mut samples, "Test message", "_").unwrap();
+    /// let res = wav.extract_message_binary(&samples, "_").unwrap();
+    /// assert_eq!(res, "Test message");
+    /// ```
     fn extract_message_binary(&self, samples: &[i16], password: &str) -> ResultStego<String> {
         let mut indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
         let mask: i16 = self.get_mask();
@@ -314,6 +324,23 @@ impl AudioSteganography<i16> for WAV16 {
         Err(StegoError::FailedToReceiveMessage)
     }
 
+    /// Clears the secret message embedded in a WAV file using the given password.
+    ///
+    /// # Arguments
+    /// * `file` - The path to the WAV file from which to clear the secret message.
+    /// * `password` - The password used to generate the unique sequence of indices.
+    ///
+    /// # Returns
+    /// * `Ok(())` if the message is successfully cleared.
+    /// * `Err(StegoError)` if an error occurs during the process.
+    ///
+    /// # Examples
+    /// ```
+    /// # use stego_wave::AudioSteganography;
+    /// # use stego_wave::formats::wav::WAV16;
+    /// let wav16 = WAV16::default();
+    /// let _ = wav16.clear_secret_message("hidden_message.wav", "my_password");
+    /// ```
     fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()> {
         let input_path = file.into();
         self.validate_file(&input_path)?;
@@ -332,6 +359,24 @@ impl AudioSteganography<i16> for WAV16 {
         Ok(())
     }
 
+    /// Clears the binary representation of the secret message from the given samples.
+    ///
+    /// # Arguments
+    /// * `samples` - A mutable slice of audio samples.
+    /// * `password` - The password used to generate unique sample indices.
+    ///
+    /// # Returns
+    /// * `Ok(())` if the secret message is successfully cleared.
+    /// * `Err(StegoError)` if the message cannot be cleared or extracted.
+    ///
+    /// # Examples
+    /// ```
+    /// # use stego_wave::AudioSteganography;
+    /// # use stego_wave::formats::wav::WAV16;
+    /// let mut samples = vec![1000, 2000, 3000, 4000];
+    /// let wav16 = WAV16::default();
+    /// let _ = wav16.clear_secret_message_binary(&mut samples, "my_password");
+    /// ```
     fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()> {
         let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
         let mask = self.get_mask();
