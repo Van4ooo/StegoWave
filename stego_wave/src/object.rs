@@ -35,8 +35,9 @@ pub trait AudioSteganography<S> {
 
     fn extract_message_binary(&self, samples: &[S], password: &str) -> ResultStego<String>;
 
-    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str)
-    -> ResultStego<String>;
+    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()>;
+
+    fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()>;
 
     fn validate_file(&self, file: &Path) -> ResultStego<()>;
 }
@@ -85,6 +86,36 @@ impl Iterator for UniqueRandomIndices {
 
                 return Some(candidate);
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UniqueRandomIndices;
+
+    fn inner_func(iter: &mut UniqueRandomIndices) {
+        for x in iter {
+            assert_eq!(x, 142);
+            break;
+        }
+    }
+
+    #[test]
+    fn test_iterator() {
+        let mut iter = UniqueRandomIndices::new(200, "_", 70);
+        let ref_iter = &mut iter;
+
+        for x in ref_iter {
+            assert_eq!(x, 155);
+            break;
+        }
+
+        inner_func(&mut iter);
+
+        for i in iter {
+            assert_eq!(i, 187);
+            break;
         }
     }
 }

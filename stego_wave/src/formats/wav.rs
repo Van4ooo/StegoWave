@@ -87,6 +87,59 @@ impl WAV16 {
             .map(|s| s.map_err(StegoError::from))
             .collect()
     }
+
+    #[inline]
+    fn get_mask(&self) -> i16 {
+        let mask: i32 = (1 << self.lsb_deep) - 1;
+        mask as i16
+    }
+
+    fn validate_header(
+        &self,
+        samples: &[i16],
+        indicates_iter: &mut UniqueRandomIndices,
+    ) -> ResultStego<(u8, u8, Vec<u8>)> {
+        let mask: i16 = self.get_mask();
+        let mut header_bytes = Vec::with_capacity(HEADER.len());
+        let mut after_header_buff = Vec::new();
+
+        let (mut current_byte, mut bit_count) = (0_u8, 0_u8);
+        let mut full_header = false;
+
+        for sample_index in indicates_iter {
+            let encoded = (samples[sample_index] & mask) as u16;
+
+            for shift in (0..self.lsb_deep).rev() {
+                let bit = ((encoded >> shift) & 1) as u8;
+                current_byte = (current_byte << 1) | bit;
+                bit_count += 1;
+
+                if bit_count == 8 {
+                    if full_header {
+                        after_header_buff.push(current_byte);
+                    } else {
+                        header_bytes.push(current_byte);
+                    }
+                    current_byte = 0;
+                    bit_count = 0;
+
+                    if header_bytes.len() == HEADER.len() {
+                        full_header = true;
+                    }
+                }
+            }
+
+            if full_header {
+                break;
+            }
+        }
+        println!("{:?}", header_bytes);
+
+        if header_bytes != HEADER.as_bytes() {
+            return Err(StegoError::IncorrectPassword);
+        }
+        Ok((current_byte, bit_count, after_header_buff))
+    }
 }
 
 macro_rules! encode_bits_full {
@@ -178,20 +231,19 @@ impl AudioSteganography<i16> for WAV16 {
         let message_bytes = message.as_bytes();
 
         let total_bytes = header_bytes.len() + message_bytes.len() + 1;
+        let per_sample = self.lsb_deep as usize;
+
         self.is_enough_samples(total_bytes, samples.len())?;
 
-        let per_sample = self.lsb_deep as usize;
-        let required_samples = (total_bytes * 8).div_ceil(per_sample);
-
         let mut bit_index = 0;
-        let mask: i32 = !((1 << self.lsb_deep) - 1);
+        let mask = !self.get_mask();
         let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
 
-        for sample_index in indices_iter.take(required_samples) {
+        for sample_index in indices_iter {
             let (value, new_bit_index) =
                 encode_bits_full!(header_bytes, message_bytes, bit_index, per_sample);
             bit_index = new_bit_index;
-            samples[sample_index] = (samples[sample_index] & (mask as i16)) | value;
+            samples[sample_index] = (samples[sample_index] & mask) | value;
         }
 
         Ok(())
@@ -234,15 +286,14 @@ impl AudioSteganography<i16> for WAV16 {
     ///
     /// Returns an error if extraction fails or if the password is incorrect.
     fn extract_message_binary(&self, samples: &[i16], password: &str) -> ResultStego<String> {
-        let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
-        let mut result = String::new();
-        let mut current_byte: u8 = 0;
-        let mut bit_count: u8 = 0;
-        let mut is_header = true;
-        let mask: i32 = (1 << self.lsb_deep) - 1;
+        let mut indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let mask: i16 = self.get_mask();
+
+        let (mut current_byte, mut bit_count, buff) = self.validate_header(samples, &mut indices_iter)?;
+        let mut result = String::from_utf8(buff).unwrap_or_default();
 
         for sample_index in indices_iter {
-            let encoded = (samples[sample_index] & (mask as i16)) as u16;
+            let encoded = (samples[sample_index] & mask) as u16;
 
             for shift in (0..self.lsb_deep).rev() {
                 let bit = ((encoded >> shift) & 1) as u8;
@@ -251,37 +302,61 @@ impl AudioSteganography<i16> for WAV16 {
 
                 if bit_count == 8 {
                     if current_byte == 0 {
-                        return if is_header {
-                            Err(StegoError::IncorrectPassword)
-                        } else {
-                            Ok(result)
-                        };
+                        return Ok(result);
                     }
 
                     result.push(current_byte as char);
                     current_byte = 0;
                     bit_count = 0;
-
-                    if is_header && (result.len() == HEADER.len()) {
-                        if result == HEADER {
-                            is_header = false;
-                            result.clear();
-                        } else {
-                            return Err(StegoError::IncorrectPassword);
-                        }
-                    }
                 }
             }
         }
         Err(StegoError::FailedToReceiveMessage)
     }
 
-    fn clear_secret_message(
-        &self,
-        file: impl Into<PathBuf>,
-        password: &str,
-    ) -> ResultStego<String> {
-        unimplemented!()
+    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()> {
+        let input_path = file.into();
+        self.validate_file(&input_path)?;
+
+        let mut reader = hound::WavReader::open(&input_path)?;
+        let mut samples = Self::read_sample(&mut reader)?;
+
+        self.clear_secret_message_binary(&mut samples, password)?;
+
+        let mut writer = hound::WavWriter::create(&input_path, reader.spec())?;
+        for sample in samples {
+            writer.write_sample(sample)?;
+        }
+        writer.finalize()?;
+
+        Ok(())
+    }
+
+    fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()> {
+        let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let mask = self.get_mask();
+        let (mut current_byte, mut bit_count, _) = self.validate_header(samples, &mut indices_iter.clone())?;
+
+        for sample_index in indices_iter {
+            let encoded = (samples[sample_index] & mask) as u16;
+            samples[sample_index] &= !mask;
+
+            for shift in (0..self.lsb_deep).rev() {
+                let bit = ((encoded >> shift) & 1) as u8;
+                current_byte = (current_byte << 1) | bit;
+                bit_count += 1;
+
+                if bit_count == 8 {
+                    if current_byte == 0 {
+                        return Ok(());
+                    }
+
+                    current_byte = 0;
+                    bit_count = 0;
+                }
+            }
+        }
+        Err(StegoError::FailedToReceiveMessage)
     }
 
     /// Validates that the provided WAV file is valid.
@@ -324,6 +399,7 @@ mod tests {
     fn extract_message_binary_success() -> Result<(), Box<dyn Error>> {
         let sample: &mut [i16; 1_000] = &mut [8; 1_000];
         for i in 1..17 {
+            println!("{i}");
             let wav16 = WAV16::builder().lsb_deep(i).build()?;
 
             wav16.hide_message_binary(sample, &format!("{i} test {i}"), "_")?;
@@ -414,6 +490,34 @@ mod tests {
 
         match res {
             Err(StegoError::IncorrectPassword) => (),
+            _ => assert!(false),
+        }
+
+        let _ = fs::remove_file(input_path);
+        let _ = fs::remove_file(output_path);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_clear_secret_message() -> Result<(), Box<dyn Error>> {
+        let samples: Vec<i16> = vec![0; 10_000];
+        let input_path = temp_path("input_clear.wav");
+        let output_path = temp_path("output_clear.wav");
+        create_wav_file(&input_path, 16, &samples)?;
+
+        let wav16 = WAV16::default();
+        let message = "Hello World!";
+        let password = "qwerty1234";
+
+        wav16.hide_message(&input_path, &output_path, message, password)?;
+        let res = wav16.extract_message(&output_path, password)?;
+        assert_eq!(res, message);
+
+        wav16.clear_secret_message(&output_path, password)?;
+
+        match wav16.extract_message(&output_path, password) {
+            Err(StegoError::IncorrectPassword) => assert!(true),
             _ => assert!(false),
         }
 
