@@ -1,3 +1,4 @@
+use std::iter;
 use crate::error::StegoError;
 use crate::object::{AudioSteganography, ResultStego, UniqueRandomIndices};
 use derive_builder::Builder;
@@ -65,22 +66,6 @@ impl WAV16 {
         Ok(())
     }
 
-    #[inline(always)]
-    fn get_full_message_bit(header: &[u8], message: &[u8], bit_index: usize) -> u8 {
-        let header_len = header.len();
-        let message_len = message.len();
-
-        let byte_index = bit_index / 8;
-
-        if byte_index < header_len {
-            (header[byte_index] >> (7 - (bit_index % 8))) & 1
-        } else if byte_index < header_len + message_len {
-            (message[byte_index - header_len] >> (7 - (bit_index % 8))) & 1
-        } else {
-            0
-        }
-    }
-
     fn read_sample(reader: &mut hound::WavReader<impl std::io::Read>) -> ResultStego<Vec<i16>> {
         reader
             .samples::<i16>()
@@ -139,20 +124,6 @@ impl WAV16 {
         }
         Ok((current_byte, bit_count, after_header_buff))
     }
-}
-
-macro_rules! encode_bits_full {
-    ($header:expr, $message:expr, $start_bit:expr, $bits_per_sample:expr) => {{
-        let mut value: u16 = 0;
-        let mut bit_pos = $start_bit;
-        for _ in 0..$bits_per_sample {
-            value <<= 1;
-            let bit = WAV16::get_full_message_bit($header, $message, bit_pos);
-            value |= bit as u16;
-            bit_pos += 1;
-        }
-        (value as i16, bit_pos)
-    }};
 }
 
 impl AudioSteganography<i16> for WAV16 {
@@ -234,17 +205,31 @@ impl AudioSteganography<i16> for WAV16 {
 
         self.is_enough_samples(total_bytes, samples.len())?;
 
-        let mut bit_index = 0;
         let mask = !self.get_mask();
         let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let mut message = header_bytes
+            .iter()
+            .chain(message_bytes.iter())
+            .chain(iter::once(&0))
+            .flat_map(|&byte| (0..8).rev().map(move |shift| (byte >> shift) & 1));
 
-        for sample_index in indices_iter {
-            let (value, new_bit_index) =
-                encode_bits_full!(header_bytes, message_bytes, bit_index, per_sample);
-            bit_index = new_bit_index;
-            samples[sample_index] = (samples[sample_index] & mask) | value;
+        let mut write_full = false;
+        'sample: for sample_index in indices_iter {
+            let mut value: u16 = 0;
+            for _ in 0..per_sample {
+                value = (value << 1) | (if let Some(bit) = message.next() {
+                    bit as u16
+                } else {
+                    write_full = true;
+                    0u16
+                });
+            }
+
+            samples[sample_index] = (samples[sample_index] & mask) | (value as i16);
+            if write_full {
+                break 'sample;
+            }
         }
-
         Ok(())
     }
 
@@ -444,7 +429,6 @@ mod tests {
     fn extract_message_binary_success() -> Result<(), Box<dyn Error>> {
         let sample: &mut [i16; 1_000] = &mut [8; 1_000];
         for i in 1..17 {
-            println!("{i}");
             let wav16 = WAV16::builder().lsb_deep(i).build()?;
 
             wav16.hide_message_binary(sample, &format!("{i} test {i}"), "_")?;
