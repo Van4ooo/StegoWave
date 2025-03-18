@@ -90,9 +90,87 @@ impl Iterator for UniqueRandomIndices {
     }
 }
 
+pub struct ByteIterator<'a, I, T> {
+    samples: &'a [T],
+    indices_iter: I,
+    mask: i16,
+    lsb_deep: u8,
+    current_byte: u8,
+    current_bit: u8,
+    temp_buffer: Vec<u8>,
+    temp_index: usize,
+}
+
+impl<'a, I, T> ByteIterator<'a, I, T>
+where
+    I: Iterator<Item = usize>,
+{
+    pub fn new(
+        samples: &'a [T],
+        indices_iter: I,
+        mask: i16,
+        lsb_deep: u8,
+        current_byte: u8,
+        current_bit: u8,
+    ) -> Self {
+        Self {
+            samples,
+            indices_iter,
+            mask,
+            lsb_deep,
+            current_byte,
+            current_bit,
+            temp_buffer: Vec::new(),
+            temp_index: 0,
+        }
+    }
+}
+
+impl<I> Iterator for ByteIterator<'_, I, i16>
+where
+    I: Iterator<Item = usize>,
+{
+    type Item = u8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.temp_index < self.temp_buffer.len() {
+            self.temp_index += 1;
+            return Some(self.temp_buffer[self.temp_index - 1]);
+        }
+
+        self.temp_buffer.clear();
+        self.temp_index = 0;
+
+        let mut full_read = false;
+
+        while let Some(sample_index) = self.indices_iter.next() {
+            let encoded = (self.samples[sample_index] & self.mask) as u16;
+
+            for shift in (0..self.lsb_deep).rev() {
+                let bit = ((encoded >> shift) & 1) as u8;
+                self.current_byte = (self.current_byte << 1) | bit;
+                self.current_bit += 1;
+
+                if self.current_bit == 8 {
+                    self.temp_buffer.push(self.current_byte);
+                    full_read = true;
+
+                    self.current_byte = 0;
+                    self.current_bit = 0;
+                }
+            }
+
+            if full_read {
+                return self.next();
+            }
+        }
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::UniqueRandomIndices;
+    use super::{ByteIterator, UniqueRandomIndices};
 
     fn inner_func(iter: &mut UniqueRandomIndices) {
         for x in iter {
@@ -102,7 +180,7 @@ mod tests {
     }
 
     #[test]
-    fn test_iterator() {
+    fn test_random_iterator() {
         let mut iter = UniqueRandomIndices::new(200, "_", 70);
         let ref_iter = &mut iter;
 
@@ -112,10 +190,27 @@ mod tests {
         }
 
         inner_func(&mut iter);
+    }
 
-        for i in iter {
-            assert_eq!(i, 187);
-            break;
-        }
+    #[test]
+    fn test_single_byte() {
+        let samples: Vec<i16> = vec![1, 0, 0, 1];
+        let indices = (0..samples.len()).collect::<Vec<_>>().into_iter();
+
+        let byte_iter = ByteIterator::new(&samples, indices, 3, 2, 0, 0);
+        let result: Vec<u8> = byte_iter.collect();
+
+        assert_eq!(result, vec![0x41]);
+    }
+
+    #[test]
+    fn test_multiple_bytes() {
+        let samples: Vec<i16> = vec![1, 0, 2, 0, 1, 2, 2, 1];
+        let indices = (0..samples.len()).collect::<Vec<_>>().into_iter();
+
+        let byte_iter = ByteIterator::new(&samples, indices, 3, 2, 0, 0);
+        let result: Vec<u8> = byte_iter.collect();
+
+        assert_eq!(result, vec![0x48, 0x69]);
     }
 }

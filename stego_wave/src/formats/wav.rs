@@ -1,7 +1,7 @@
-use std::iter;
 use crate::error::StegoError;
-use crate::object::{AudioSteganography, ResultStego, UniqueRandomIndices};
+use crate::object::{AudioSteganography, ByteIterator, ResultStego, UniqueRandomIndices};
 use derive_builder::Builder;
+use std::iter;
 use std::path::{Path, PathBuf};
 
 const LSB_DEEP_DEFAULT: u8 = 1;
@@ -79,50 +79,35 @@ impl WAV16 {
         mask as i16
     }
 
-    fn validate_header(
+    fn validate_header<'a, I: Iterator<Item = usize>>(
         &self,
-        samples: &[i16],
-        indicates_iter: &mut UniqueRandomIndices,
-    ) -> ResultStego<(u8, u8, Vec<u8>)> {
-        let mask: i16 = self.get_mask();
+        samples: &'a [i16],
+        indicates_iter: &'a mut I,
+    ) -> ResultStego<ByteIterator<'a, &'a mut I, i16>> {
         let mut header_bytes = Vec::with_capacity(HEADER.len());
-        let mut after_header_buff = Vec::new();
 
-        let (mut current_byte, mut bit_count) = (0_u8, 0_u8);
-        let mut full_header = false;
+        let mut byte_iterator = ByteIterator::new(
+            samples,
+            indicates_iter,
+            self.get_mask(),
+            self.lsb_deep,
+            0,
+            0,
+        );
 
-        for sample_index in indicates_iter {
-            let encoded = (samples[sample_index] & mask) as u16;
+        for byte in &mut byte_iterator {
+            header_bytes.push(byte);
 
-            for shift in (0..self.lsb_deep).rev() {
-                let bit = ((encoded >> shift) & 1) as u8;
-                current_byte = (current_byte << 1) | bit;
-                bit_count += 1;
-
-                if bit_count == 8 {
-                    if full_header {
-                        after_header_buff.push(current_byte);
-                    } else {
-                        header_bytes.push(current_byte);
-                    }
-                    current_byte = 0;
-                    bit_count = 0;
-
-                    if header_bytes.len() == HEADER.len() {
-                        full_header = true;
-                    }
-                }
-            }
-
-            if full_header {
+            if header_bytes.len() == HEADER.len() {
                 break;
             }
         }
 
-        if header_bytes != HEADER.as_bytes() {
-            return Err(StegoError::IncorrectPassword);
+        if header_bytes == HEADER.as_bytes() {
+            Ok(byte_iterator)
+        } else {
+            Err(StegoError::IncorrectPassword)
         }
-        Ok((current_byte, bit_count, after_header_buff))
     }
 }
 
@@ -201,8 +186,6 @@ impl AudioSteganography<i16> for WAV16 {
         let message_bytes = message.as_bytes();
 
         let total_bytes = header_bytes.len() + message_bytes.len() + 1;
-        let per_sample = self.lsb_deep as usize;
-
         self.is_enough_samples(total_bytes, samples.len())?;
 
         let mask = !self.get_mask();
@@ -216,13 +199,14 @@ impl AudioSteganography<i16> for WAV16 {
         let mut write_full = false;
         'sample: for sample_index in indices_iter {
             let mut value: u16 = 0;
-            for _ in 0..per_sample {
-                value = (value << 1) | (if let Some(bit) = message.next() {
-                    bit as u16
-                } else {
-                    write_full = true;
-                    0u16
-                });
+            for _ in 0..self.lsb_deep {
+                value = (value << 1)
+                    | (if let Some(bit) = message.next() {
+                        bit as u16
+                    } else {
+                        write_full = true;
+                        0u16
+                    });
             }
 
             samples[sample_index] = (samples[sample_index] & mask) | (value as i16);
@@ -282,30 +266,17 @@ impl AudioSteganography<i16> for WAV16 {
     /// ```
     fn extract_message_binary(&self, samples: &[i16], password: &str) -> ResultStego<String> {
         let mut indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
-        let mask: i16 = self.get_mask();
 
-        let (mut current_byte, mut bit_count, buff) = self.validate_header(samples, &mut indices_iter)?;
-        let mut result = String::from_utf8(buff).unwrap_or_default();
+        let byte_iter = self.validate_header(samples, &mut indices_iter)?;
+        let mut result = String::new();
 
-        for sample_index in indices_iter {
-            let encoded = (samples[sample_index] & mask) as u16;
-
-            for shift in (0..self.lsb_deep).rev() {
-                let bit = ((encoded >> shift) & 1) as u8;
-                current_byte = (current_byte << 1) | bit;
-                bit_count += 1;
-
-                if bit_count == 8 {
-                    if current_byte == 0 {
-                        return Ok(result);
-                    }
-
-                    result.push(current_byte as char);
-                    current_byte = 0;
-                    bit_count = 0;
-                }
+        for byte in byte_iter {
+            if byte == 0 {
+                return Ok(result);
             }
+            result.push(byte as char);
         }
+
         Err(StegoError::FailedToReceiveMessage)
     }
 
@@ -365,8 +336,10 @@ impl AudioSteganography<i16> for WAV16 {
     fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()> {
         let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
         let mask = self.get_mask();
-        let (mut current_byte, mut bit_count, _) = self.validate_header(samples, &mut indices_iter.clone())?;
 
+        self.validate_header(samples, &mut indices_iter.clone())?;
+
+        let (mut current_byte, mut bit_count) = (0_u8, 0_u8);
         for sample_index in indices_iter {
             let encoded = (samples[sample_index] & mask) as u16;
             samples[sample_index] &= !mask;
