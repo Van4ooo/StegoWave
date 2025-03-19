@@ -1,4 +1,5 @@
 use crate::error::StegoError;
+use hound::WavSpec;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use std::collections::HashSet;
@@ -34,12 +35,16 @@ pub trait AudioSteganography<S> {
     ) -> ResultStego<String>;
 
     fn extract_message_binary(&self, samples: &[S], password: &str) -> ResultStego<String>;
-
     fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()>;
-
-    fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()>;
-
+    fn clear_secret_message_binary(&self, samples: &mut [S], password: &str) -> ResultStego<()>;
     fn validate_file(&self, file: &Path) -> ResultStego<()>;
+    fn read_samples_from_byte(&self, byte: Vec<u8>) -> ResultStego<(Vec<S>, AudioFileSpec)>;
+    fn write_samples_to_byte(&self, spec: AudioFileSpec, samples: &[S]) -> ResultStego<Vec<u8>>;
+    fn default_filename(&self) -> String;
+}
+
+pub enum AudioFileSpec {
+    Wav(WavSpec),
 }
 
 #[derive(Clone)]

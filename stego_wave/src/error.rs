@@ -9,6 +9,7 @@ pub enum StegoError {
     HoundError(hound::Error),
     IncorrectPassword,
     FailedToReceiveMessage,
+    Other(String),
 }
 
 impl fmt::Display for StegoError {
@@ -23,6 +24,7 @@ impl fmt::Display for StegoError {
             StegoError::FailedToReceiveMessage => {
                 write!(f, "Could not receive message, file may be corrupted")
             }
+            StegoError::Other(err) => write!(f, "{err}"),
         }
     }
 }

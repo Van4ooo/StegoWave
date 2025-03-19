@@ -1,6 +1,9 @@
 use crate::error::StegoError;
-use crate::object::{AudioSteganography, ByteIterator, ResultStego, UniqueRandomIndices};
+use crate::object::{
+    AudioFileSpec, AudioSteganography, ByteIterator, ResultStego, UniqueRandomIndices,
+};
 use derive_builder::Builder;
+use std::io::Cursor;
 use std::iter;
 use std::path::{Path, PathBuf};
 
@@ -388,6 +391,41 @@ impl AudioSteganography<i16> for WAV16 {
             ));
         }
         Ok(())
+    }
+
+    fn read_samples_from_byte(&self, byte: Vec<u8>) -> ResultStego<(Vec<i16>, AudioFileSpec)> {
+        let cursor = Cursor::new(byte);
+        let mut reader = hound::WavReader::new(cursor)
+            .map_err(|_| StegoError::Other("Error reading WAV".to_string()))?;
+
+        let spec = reader.spec();
+        let samples = WAV16::read_sample(&mut reader)
+            .map_err(|_| StegoError::Other("Error reading samples".to_string()))?;
+
+        Ok((samples, AudioFileSpec::Wav(spec)))
+    }
+
+    fn write_samples_to_byte(&self, spec: AudioFileSpec, samples: &[i16]) -> ResultStego<Vec<u8>> {
+        let mut out_buf = Cursor::new(Vec::<u8>::new());
+        let mut writer = match spec {
+            AudioFileSpec::Wav(spec) => hound::WavWriter::new(&mut out_buf, spec)?,
+        };
+
+        for sample in samples {
+            writer
+                .write_sample(*sample)
+                .map_err(|_| StegoError::Other("Error writing sample".to_string()))?;
+        }
+
+        writer
+            .finalize()
+            .map_err(|_| StegoError::Other("Error finalizing writer".to_string()))?;
+
+        Ok(out_buf.into_inner())
+    }
+
+    fn default_filename(&self) -> String {
+        "wav_16.wav".to_string()
     }
 }
 

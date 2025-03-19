@@ -2,7 +2,9 @@
 resolver = "2"
 members = [
     "app",
-    "stego_wave"
+    "rest_service/client",
+    "rest_service/server",
+    "stego_wave",
 ]
 
 [workspace.package]
@@ -11,4 +13,4 @@ authors = ["Ivan Rybachyk <ivan2005rubachyk@gmail.com>"]
 edition = "2024"
 license = "Apache-2.0"
 license-file = "./LICENSE"
-description = "Audio file steganography with Client / Server gRPC writen on Rust 🦀"
+description = "Service for audio file steganography with gRPC and REST architecture writen on Rust 🦀"

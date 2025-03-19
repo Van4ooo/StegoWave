@@ -1,0 +1,12 @@
+[package]
+name = "rest_client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+
+[lib]
+name = "rest_client"
+path = "lib.rs"
