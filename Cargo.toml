@@ -4,6 +4,7 @@ members = [
     "app",
     "rest_service/client",
     "rest_service/server",
+    "grpc_service",
     "stego_wave",
 ]
 

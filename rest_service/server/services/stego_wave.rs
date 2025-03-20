@@ -2,8 +2,6 @@ use actix_multipart::{Field, Multipart};
 use futures::{StreamExt, TryStreamExt};
 use std::error::Error;
 use std::mem;
-use stego_wave::AudioSteganography;
-use stego_wave::formats::wav::WAV16;
 use tracing::{debug, warn};
 
 #[derive(Default)]
@@ -129,17 +127,4 @@ async fn get_text_from_field(mut field: Field) -> Result<String, Box<dyn Error>>
         bytes.extend_from_slice(&data);
     }
     Ok(String::from_utf8(bytes).unwrap_or_default())
-}
-
-pub fn get_format_instance(
-    format: &str,
-    lsb_deep: u8,
-) -> Result<impl AudioSteganography<i16>, String> {
-    match format {
-        "wav16" => match WAV16::builder().lsb_deep(lsb_deep).build() {
-            Ok(wav16) => Ok(wav16),
-            Err(err) => Err(format!("{err}")),
-        },
-        _ => Err("Invalid format".to_string()),
-    }
 }

@@ -2,9 +2,10 @@ use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Responder, post, web};
 use stego_wave::AudioSteganography;
 use stego_wave::error::StegoError;
+use stego_wave::formats::get_stego_by_str;
 
 use crate::models::request_object::{ClearRequest, ExtractRequest, HideRequest};
-use crate::services::stego_wave::{get_format_instance, parse_multipart_payload};
+use crate::services::stego_wave::parse_multipart_payload;
 
 macro_rules! audio_response_from_samples {
     ($stego:expr, $spec:expr, $samples:expr) => {{
@@ -57,7 +58,7 @@ pub async fn hide_message(payload: Multipart) -> impl Responder {
     let (file_bytes, message, password, format, lsb_deep) =
         get_required_field!(payload, true, true, true, true);
 
-    let stego = match get_format_instance(&format, lsb_deep) {
+    let stego = match get_stego_by_str(&format, lsb_deep) {
         Ok(stego) => stego,
         Err(err) => return HttpResponse::BadRequest().body(err),
     };
@@ -93,7 +94,7 @@ pub async fn extract_message(payload: Multipart) -> impl Responder {
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 
-    let stego = match get_format_instance(&format, lsb_deep) {
+    let stego = match get_stego_by_str(&format, lsb_deep) {
         Ok(stego) => stego,
         Err(err) => return HttpResponse::BadRequest().body(err),
     };
@@ -131,7 +132,7 @@ pub async fn clear_message(payload: Multipart) -> impl Responder {
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 
-    let stego = match get_format_instance(&format, lsb_deep) {
+    let stego = match get_stego_by_str(&format, lsb_deep) {
         Ok(stego) => stego,
         Err(err) => return HttpResponse::BadRequest().body(err),
     };

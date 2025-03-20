@@ -1,0 +1,26 @@
+[package]
+name = "grpc_service"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "grpc_server"
+path = "server/main.rs"
+
+[lib]
+name = "grpc_client"
+path = "client/lib.rs"
+
+[dependencies]
+tonic = "0.12.3"
+prost = "0.13.4"
+tokio = {version = "1.43.0", features = ["macros", "rt-multi-thread"]}
+
+stego_wave = {path = "../stego_wave"}
+chrono = "0.4.39"
+tracing-subscriber = "0.3.19"
+
+[build-dependencies]
+tonic-build = "0.12.3"
