@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt;
 use std::fmt::Formatter;
+use thiserror::Error;
 
 #[derive(Debug)]
 pub enum StegoError {
@@ -35,4 +36,19 @@ impl From<hound::Error> for StegoError {
     fn from(value: hound::Error) -> Self {
         StegoError::HoundError(value)
     }
+}
+
+#[derive(Debug, Error)]
+pub enum StegoWaveClientError {
+    #[error("Connection failed")]
+    ConnectionFailed,
+
+    #[error("Request failed")]
+    RequestFailed,
+
+    #[error("Invalid URL")]
+    UlrInvalid,
+
+    #[error("{0}")]
+    Response(String),
 }

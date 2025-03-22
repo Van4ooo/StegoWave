@@ -6,6 +6,7 @@ members = [
     "rest_service/server",
     "grpc_service",
     "stego_wave",
+    "tests_clients",
 ]
 
 [workspace.package]

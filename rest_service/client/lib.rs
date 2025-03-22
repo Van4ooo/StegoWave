@@ -1,2 +1,3 @@
-mod error;
-mod rest_client;
+pub mod rest_client;
+
+pub use rest_client::StegoWaveRestClient;

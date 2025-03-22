@@ -1,10 +1,11 @@
-use crate::error::StegoError;
+use crate::error::{StegoError, StegoWaveClientError};
 use hound::WavSpec;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
+use url::Url;
 
 pub type ResultStego<T> = Result<T, StegoError>;
 
@@ -171,6 +172,40 @@ where
         }
         None
     }
+}
+
+pub trait StegoWaveClient {
+    fn new(url: impl TryInto<Url>) -> impl Future<Output = Result<Self, StegoWaveClientError>>
+    where
+        Self: Sized;
+
+    fn hide_message(
+        &mut self,
+        file: Vec<u8>,
+        file_name: impl Into<String>,
+        message: impl Into<String>,
+        password: impl Into<String>,
+        format: impl Into<String>,
+        lsb_deep: u8,
+    ) -> impl Future<Output = Result<Vec<u8>, StegoWaveClientError>>;
+
+    fn extract_message(
+        &mut self,
+        file: Vec<u8>,
+        file_name: impl Into<String>,
+        password: impl Into<String>,
+        format: impl Into<String>,
+        lsb_deep: u8,
+    ) -> impl Future<Output = Result<String, StegoWaveClientError>>;
+
+    fn clear_message(
+        &mut self,
+        file: Vec<u8>,
+        file_name: impl Into<String>,
+        password: impl Into<String>,
+        format: impl Into<String>,
+        lsb_deep: u8,
+    ) -> impl Future<Output = Result<Vec<u8>, StegoWaveClientError>>;
 }
 
 #[cfg(test)]
