@@ -1,6 +1,5 @@
 use crate::stego_wave_grpc::stego_wave_service_client::StegoWaveServiceClient;
 use crate::stego_wave_grpc::{ClearRequest, ExtractRequest, HideRequest};
-use std::convert::Into;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
 use tonic::transport::Channel;
@@ -11,11 +10,8 @@ pub struct StegoWaveGrpcClient {
     client: StegoWaveServiceClient<Channel>,
 }
 
-impl StegoWaveClient for StegoWaveGrpcClient {
-    async fn new(url: impl TryInto<Url>) -> Result<Self, StegoWaveClientError>
-    where
-        Self: Sized,
-    {
+impl StegoWaveGrpcClient{
+    pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
         let rest_url = url
             .try_into()
             .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
@@ -29,24 +25,26 @@ impl StegoWaveClient for StegoWaveGrpcClient {
 
         Ok(Self { client })
     }
+}
 
-    #[inline]
+#[async_trait::async_trait]
+impl<'a> StegoWaveClient for StegoWaveGrpcClient {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: impl Into<String>,
-        message: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        _file_name: String,
+        message: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
         match self
             .client
             .hide_message(HideRequest {
                 file,
-                message: message.into(),
-                password: password.into(),
-                format: format.into(),
+                message,
+                password,
+                format,
                 lsb_deep: lsb_deep as _,
             })
             .await
@@ -59,17 +57,17 @@ impl StegoWaveClient for StegoWaveGrpcClient {
     async fn extract_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        _file_name: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
     ) -> Result<String, StegoWaveClientError> {
         match self
             .client
             .extract_message(ExtractRequest {
                 file,
-                password: password.into(),
-                format: format.into(),
+                password,
+                format,
                 lsb_deep: lsb_deep as _,
             })
             .await
@@ -82,17 +80,17 @@ impl StegoWaveClient for StegoWaveGrpcClient {
     async fn clear_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        _file_name: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
         match self
             .client
             .clear_message(ClearRequest {
                 file,
-                password: password.into(),
-                format: format.into(),
+                password,
+                format,
                 lsb_deep: lsb_deep as _,
             })
             .await

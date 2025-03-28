@@ -1,0 +1,17 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+clap = { version = "4.5.26", features = ["derive"]}
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"]}
+
+stego_wave = { path = "../stego_wave" }
+rest_client = { path = "../rest_service/client" }
+grpc_client = { package = "grpc_service", path = "../grpc_service" }
+
+[[bin]]
+name = "sw"
+path = "src/main.rs"

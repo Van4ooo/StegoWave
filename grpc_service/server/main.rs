@@ -12,8 +12,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
     let stego_wave_service = services::StegoWaveServiceImpl::default();
 
+    let svc = StegoWaveServiceServer::new(stego_wave_service)
+        .max_decoding_message_size(8 * 1024 * 1024) // 8 МБ для декодування
+        .max_encoding_message_size(8 * 1024 * 1024); // 8 МБ для кодування
+
     Server::builder()
-        .add_service(StegoWaveServiceServer::new(stego_wave_service))
+        .max_frame_size(8 * 1024 * 1024)
+        .add_service(svc)
         .serve(addr)
         .await?;
 

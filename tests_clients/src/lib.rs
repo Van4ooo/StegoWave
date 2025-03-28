@@ -45,9 +45,9 @@ mod clients_tests {
             match client
                 .extract_message(
                     result.clone(),
-                    "input_file.wav",
-                    password,
-                    "wav16",
+                    "input_file.wav".to_string(),
+                    password.to_string(),
+                    "wav16".to_string(),
                     lsb_deep,
                 )
                 .await
@@ -68,7 +68,7 @@ mod clients_tests {
     macro_rules! clear_message {
         ($client:expr, $result:expr, $password:expr) => {
             $client
-                .clear_message($result, "input_full.wav", $password, "wav16", 1)
+                .clear_message($result, "input_full.wav".to_string(), $password, "wav16".to_string(), 1)
                 .await
         };
     }
@@ -85,18 +85,18 @@ mod clients_tests {
         let result = client
             .hide_message(
                 file_byte,
-                "input_full.wav",
-                "Secret Message",
-                "qwerty1234",
-                "wav16",
+                "input_full.wav".to_string(),
+                "Secret Message".to_string(),
+                "qwerty1234".to_string(),
+                "wav16".to_string(),
                 1,
             )
             .await?;
 
         test_extract_message(&mut client, result.clone(), true).await;
-        assert!(clear_message!(&mut client, result.clone(), "qwerty").is_err());
+        assert!(clear_message!(&mut client, result.clone(), "qwerty".to_string()).is_err());
 
-        let result = clear_message!(&mut client, result.clone(), "qwerty1234")?;
+        let result = clear_message!(&mut client, result.clone(), "qwerty1234".to_string())?;
         test_extract_message(&mut client, result, false).await;
 
         let _ = fs::remove_file(input_path);

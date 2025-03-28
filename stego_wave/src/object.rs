@@ -5,7 +5,6 @@ use rand_chacha::ChaCha8Rng;
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
-use url::Url;
 
 pub type ResultStego<T> = Result<T, StegoError>;
 
@@ -174,38 +173,35 @@ where
     }
 }
 
-pub trait StegoWaveClient {
-    fn new(url: impl TryInto<Url>) -> impl Future<Output = Result<Self, StegoWaveClientError>>
-    where
-        Self: Sized;
-
-    fn hide_message(
+#[async_trait::async_trait]
+pub trait StegoWaveClient: Sync + Send {
+    async fn hide_message(
         &mut self,
         file: Vec<u8>,
-        file_name: impl Into<String>,
-        message: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        file_name: String,
+        message: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
-    ) -> impl Future<Output = Result<Vec<u8>, StegoWaveClientError>>;
+    ) -> Result<Vec<u8>, StegoWaveClientError>;
 
-    fn extract_message(
+    async fn extract_message(
         &mut self,
         file: Vec<u8>,
-        file_name: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        file_name: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
-    ) -> impl Future<Output = Result<String, StegoWaveClientError>>;
+    ) -> Result<String, StegoWaveClientError>;
 
-    fn clear_message(
+    async fn clear_message(
         &mut self,
         file: Vec<u8>,
-        file_name: impl Into<String>,
-        password: impl Into<String>,
-        format: impl Into<String>,
+        file_name: String,
+        password: String,
+        format: String,
         lsb_deep: u8,
-    ) -> impl Future<Output = Result<Vec<u8>, StegoWaveClientError>>;
+    ) -> Result<Vec<u8>, StegoWaveClientError>;
 }
 
 #[cfg(test)]

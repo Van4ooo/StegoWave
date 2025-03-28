@@ -17,6 +17,7 @@ path = "client/lib.rs"
 tonic = "0.12.3"
 prost = "0.13.4"
 tokio = {version = "1.43.0", features = ["macros", "rt-multi-thread"]}
+async-trait = "0.1.85"
 
 stego_wave = {path = "../stego_wave"}
 chrono = "0.4.39"
