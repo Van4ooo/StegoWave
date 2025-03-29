@@ -1,11 +1,11 @@
-use tonic::Request;
 use crate::stego_wave_grpc::stego_wave_service_client::StegoWaveServiceClient;
 use crate::stego_wave_grpc::{ClearRequest, ExtractRequest, HideRequest};
+use crate::streaming::get_output_audio;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
+use tonic::Request;
 use tonic::transport::Channel;
 use url::Url;
-use crate::streaming::get_output_audio;
 
 const CHUNK_SIZE: usize = 1024 * 1024;
 
@@ -14,11 +14,11 @@ pub struct StegoWaveGrpcClient {
     client: StegoWaveServiceClient<Channel>,
 }
 
-fn create_chunks<'a>(file: &[u8], chunk_size: usize) -> impl Iterator<Item=&[u8]> {
+fn create_chunks(file: &[u8], chunk_size: usize) -> impl Iterator<Item = &[u8]> {
     file.chunks(chunk_size)
 }
 
-impl StegoWaveGrpcClient{
+impl StegoWaveGrpcClient {
     pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
         let rest_url = url
             .try_into()
@@ -36,7 +36,7 @@ impl StegoWaveGrpcClient{
 }
 
 #[async_trait::async_trait]
-impl<'a> StegoWaveClient for StegoWaveGrpcClient {
+impl StegoWaveClient for StegoWaveGrpcClient {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,
@@ -63,15 +63,14 @@ impl<'a> StegoWaveClient for StegoWaveGrpcClient {
                         HideRequest::create_by_chunk(chunk)
                     }
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         );
 
-        let response_stream = self.client
+        let response_stream = self
+            .client
             .hide_message(Request::new(request_stream))
             .await
-            .map_err(|err|
-                StegoWaveClientError::Response(err.message().to_string())
-            )?
+            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
             .into_inner();
 
         get_output_audio(response_stream).await
@@ -101,15 +100,14 @@ impl<'a> StegoWaveClient for StegoWaveGrpcClient {
                         ExtractRequest::create_by_chunk(chunk)
                     }
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         );
 
-        let response = self.client
+        let response = self
+            .client
             .extract_message(Request::new(request_stream))
             .await
-            .map_err(|err|
-                StegoWaveClientError::Response(err.message().to_string())
-            )?
+            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
             .into_inner();
 
         Ok(response.message)
@@ -139,17 +137,16 @@ impl<'a> StegoWaveClient for StegoWaveGrpcClient {
                         ClearRequest::create_by_chunk(chunk)
                     }
                 })
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>(),
         );
 
-        let response_stream = self.client
+        let response_stream = self
+            .client
             .clear_message(Request::new(request_stream))
             .await
-            .map_err(|err|
-                StegoWaveClientError::Response(err.message().to_string())
-            )?
+            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
             .into_inner();
 
-       get_output_audio(response_stream).await
+        get_output_audio(response_stream).await
     }
 }

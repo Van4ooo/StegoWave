@@ -271,13 +271,13 @@ impl AudioSteganography<i16> for WAV16 {
         let mut indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
 
         let byte_iter = self.validate_header(samples, &mut indices_iter)?;
-        let mut result = String::new();
+        let mut result: Vec<u8> = Vec::new();
 
         for byte in byte_iter {
             if byte == 0 {
-                return Ok(result);
+                return Ok(String::from_utf8(result).unwrap_or_default());
             }
-            result.push(byte as char);
+            result.push(byte);
         }
 
         Err(StegoError::FailedToReceiveMessage)

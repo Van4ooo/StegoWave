@@ -7,6 +7,7 @@ authors.workspace = true
 [dependencies]
 clap = { version = "4.5.26", features = ["derive"]}
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"]}
+hound = "3.5.1"
 
 stego_wave = { path = "../stego_wave" }
 rest_client = { path = "../rest_service/client" }

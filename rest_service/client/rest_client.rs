@@ -19,8 +19,8 @@ pub struct StegoWaveRestClient {
     client: Client,
 }
 
-impl StegoWaveRestClient{
-    pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError>{
+impl StegoWaveRestClient {
+    pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
         let rest_url = url
             .try_into()
             .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
@@ -33,7 +33,7 @@ impl StegoWaveRestClient{
 }
 
 #[async_trait::async_trait]
-impl<'a> StegoWaveClient for StegoWaveRestClient {
+impl StegoWaveClient for StegoWaveRestClient {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,

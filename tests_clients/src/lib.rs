@@ -68,7 +68,13 @@ mod clients_tests {
     macro_rules! clear_message {
         ($client:expr, $result:expr, $password:expr) => {
             $client
-                .clear_message($result, "input_full.wav".to_string(), $password, "wav16".to_string(), 1)
+                .clear_message(
+                    $result,
+                    "input_full.wav".to_string(),
+                    $password,
+                    "wav16".to_string(),
+                    1,
+                )
                 .await
         };
     }

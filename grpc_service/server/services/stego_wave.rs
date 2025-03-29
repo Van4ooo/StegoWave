@@ -1,9 +1,11 @@
+use crate::services::streaming::{
+    AudioMetadata, aggregate_file_from_stream, stream_file_as_chunks,
+};
 use std::pin::Pin;
 use stego_wave::AudioSteganography;
 use stego_wave::formats::get_stego_by_str;
+use tonic::codegen::tokio_stream::Stream;
 use tonic::{Request, Response, Status};
-use tonic::codegen::tokio_stream::{Stream, StreamExt};
-use crate::services::streaming::{aggregate_file_from_stream, AudioMetadata, stream_file_as_chunks};
 
 use crate::stego_wave_grpc::{
     AudioResponse, ClearRequest, ExtractRequest, HideRequest, MessageResponse,
@@ -26,10 +28,13 @@ impl StegoWaveService for StegoWaveServiceImpl {
         let (file, metadata) = aggregate_file_from_stream(request.into_inner()).await?;
 
         let (message, password, format, lsb_deep) = match metadata {
-            AudioMetadata::Hide{message, password, format, lsb_deep} => {
-                (message, password, format, lsb_deep)
-            },
-            AudioMetadata::General{..} => {
+            AudioMetadata::Hide {
+                message,
+                password,
+                format,
+                lsb_deep,
+            } => (message, password, format, lsb_deep),
+            AudioMetadata::General { .. } => {
                 return Err(Status::internal("Invalid metadata format"));
             }
         };
@@ -51,7 +56,8 @@ impl StegoWaveService for StegoWaveServiceImpl {
             .write_samples_to_byte(spec, &samples)
             .map_err(|err| Status::internal(err.to_string()))?;
 
-        let stream: Self::HideMessageStream = Box::pin(stream_file_as_chunks(output_byte, CHUNK_SIZE));
+        let stream: Self::HideMessageStream =
+            Box::pin(stream_file_as_chunks(output_byte, CHUNK_SIZE));
         Ok(Response::new(stream))
     }
 
@@ -62,12 +68,14 @@ impl StegoWaveService for StegoWaveServiceImpl {
         let (file, metadata) = aggregate_file_from_stream(request.into_inner()).await?;
 
         let (password, format, lsb_deep) = match metadata {
-            AudioMetadata::Hide{..}=> {
+            AudioMetadata::Hide { .. } => {
                 return Err(Status::internal("Invalid metadata format"));
-            },
-            AudioMetadata::General{password, format, lsb_deep} => {
-                (password, format, lsb_deep)
             }
+            AudioMetadata::General {
+                password,
+                format,
+                lsb_deep,
+            } => (password, format, lsb_deep),
         };
 
         let stego = match get_stego_by_str(&format, lsb_deep as _) {
@@ -96,12 +104,14 @@ impl StegoWaveService for StegoWaveServiceImpl {
         let (file, metadata) = aggregate_file_from_stream(request.into_inner()).await?;
 
         let (password, format, lsb_deep) = match metadata {
-            AudioMetadata::Hide{..}=> {
+            AudioMetadata::Hide { .. } => {
                 return Err(Status::internal("Invalid metadata format"));
-            },
-            AudioMetadata::General{password, format, lsb_deep} => {
-                (password, format, lsb_deep)
             }
+            AudioMetadata::General {
+                password,
+                format,
+                lsb_deep,
+            } => (password, format, lsb_deep),
         };
 
         let stego = match get_stego_by_str(&format, lsb_deep as _) {
@@ -121,7 +131,8 @@ impl StegoWaveService for StegoWaveServiceImpl {
             .write_samples_to_byte(spec, &samples)
             .map_err(|err| Status::internal(err.to_string()))?;
 
-        let stream: Self::ClearMessageStream = Box::pin(stream_file_as_chunks(output_byte, CHUNK_SIZE));
+        let stream: Self::ClearMessageStream =
+            Box::pin(stream_file_as_chunks(output_byte, CHUNK_SIZE));
         Ok(Response::new(stream))
     }
 }
