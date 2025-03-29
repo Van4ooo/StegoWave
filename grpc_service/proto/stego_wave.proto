@@ -33,7 +33,7 @@ message MessageResponse {
 }
 
 service StegoWaveService {
-    rpc HideMessage(HideRequest) returns (AudioResponse);
-    rpc ExtractMessage(ExtractRequest) returns (MessageResponse);
-    rpc ClearMessage(ClearRequest) returns (AudioResponse);
+    rpc HideMessage(stream HideRequest) returns (stream AudioResponse);
+    rpc ExtractMessage(stream ExtractRequest) returns (MessageResponse);
+    rpc ClearMessage(stream ClearRequest) returns (stream AudioResponse);
 }
