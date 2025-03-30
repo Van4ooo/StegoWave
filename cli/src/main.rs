@@ -2,6 +2,7 @@ use clap::Parser;
 
 mod cli;
 mod client_request;
+mod formating;
 
 #[tokio::main]
 async fn main() {

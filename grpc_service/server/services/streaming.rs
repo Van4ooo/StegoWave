@@ -1,5 +1,6 @@
 use crate::stego_wave_grpc::{AudioResponse, ClearRequest, ExtractRequest, HideRequest};
 use bytes::Bytes;
+use std::mem;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::Status;
@@ -21,18 +22,18 @@ pub enum AudioMetadata {
 
 pub trait AudioRequestExt {
     fn get_file(&self) -> &[u8];
-    fn get_metadata(&self) -> AudioMetadata;
+    fn get_metadata(&mut self) -> AudioMetadata;
 }
 
 impl AudioRequestExt for HideRequest {
     fn get_file(&self) -> &[u8] {
         &self.file
     }
-    fn get_metadata(&self) -> AudioMetadata {
+    fn get_metadata(&mut self) -> AudioMetadata {
         AudioMetadata::Hide {
-            message: self.message.clone(),
-            password: self.password.clone(),
-            format: self.format.clone(),
+            message: mem::take(&mut self.message),
+            password: mem::take(&mut self.password),
+            format: mem::take(&mut self.format),
             lsb_deep: self.lsb_deep,
         }
     }
@@ -42,10 +43,10 @@ impl AudioRequestExt for ExtractRequest {
     fn get_file(&self) -> &[u8] {
         &self.file
     }
-    fn get_metadata(&self) -> AudioMetadata {
+    fn get_metadata(&mut self) -> AudioMetadata {
         AudioMetadata::General {
-            password: self.password.clone(),
-            format: self.format.clone(),
+            password: mem::take(&mut self.password),
+            format: mem::take(&mut self.format),
             lsb_deep: self.lsb_deep,
         }
     }
@@ -55,10 +56,10 @@ impl AudioRequestExt for ClearRequest {
     fn get_file(&self) -> &[u8] {
         &self.file
     }
-    fn get_metadata(&self) -> AudioMetadata {
+    fn get_metadata(&mut self) -> AudioMetadata {
         AudioMetadata::General {
-            password: self.password.clone(),
-            format: self.format.clone(),
+            password: mem::take(&mut self.password),
+            format: mem::take(&mut self.format),
             lsb_deep: self.lsb_deep,
         }
     }
@@ -74,7 +75,7 @@ where
     let mut metadata: Option<AudioMetadata> = None;
 
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk?;
+        let mut chunk = chunk?;
         if metadata.is_none() {
             metadata = Some(chunk.get_metadata());
         }
