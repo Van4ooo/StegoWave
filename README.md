@@ -14,6 +14,8 @@ Audio steganography services with a cli client written in Rust🦀
 | REST         | **rest** | [/rest_service](https://github.com/Van4ooo/StegoWave/tree/capstone-project/rest_service) | [Swagger](http://localhost:8080/swagger-ui/)                                                                     |
 | gRPC         | **grpc** | [/grpc_service](https://github.com/Van4ooo/StegoWave/tree/capstone-project/grpc_service) | [Proto file](https://github.com/Van4ooo/StegoWave/blob/capstone-project/grpc_service/proto/stego_wave.proto#L35) |
 
+---
+
 ### Steganography core lib => [stego_wave](https://github.com/Van4ooo/StegoWave/tree/capstone-project/stego_wave)
 
 This Rust library provides audio steganography functionality. It allows users to hide, extract, and clear secret messages within audio samples using least significant bit (LSB) manipulation.
@@ -42,6 +44,7 @@ Unique random indices are generated based on a password, ensuring that only user
 - **Configurable LSB Depth:**
   Users can configure the number of LSBs used (with a default of 1 and a valid range of 1 to 16) to balance between audio quality and message capacity. This is implemented using the builder pattern for easy and flexible configuration.
 
+---
 
 ## Build setup
 
@@ -51,14 +54,10 @@ git clone --branch capstone-project --single-branch https://github.com/Van4ooo/S
 cd StegoWave
 ```
 
----
-
 Run gRPC server
 ```shell
 cargo run --bin grpc_server
 ```
-
----
 
 Run REST server
 ```shell
@@ -94,7 +93,8 @@ cargo build --release --bin sw
 ./target/release/sw --help
 ```
 
-### todo: image --help
+![image](https://github.com/user-attachments/assets/b339c43c-83f2-4d6e-8ffe-4aff3cd4f41a)
+
 
 ### Usage ```sw```
 ```sw``` supports three primary commands: ```hide```, ```extract```, and ```clear```. All commands share some common fields such as the input file name,
@@ -107,7 +107,7 @@ Use the ```hide``` command to embed a secret message into an audio file.
 ./target/release/sw hide --help
 ```
 
-### todo: image hide --help
+![image](https://github.com/user-attachments/assets/67bb8fc5-d043-478c-b76c-fc9e6e70feab)
 
 Command Syntax
 ```shell
@@ -116,7 +116,10 @@ Command Syntax
 ```
 
 - hide successfully
+![image](https://github.com/user-attachments/assets/dfe49f8a-6888-4f34-ac60-1830462e88d6)
 - hide failed (servers unavailable)
+![image](https://github.com/user-attachments/assets/4d46b722-5123-42fe-be34-4203fa4bf570)
+
 
 ### Extracting a secret message
 Use the ```extract``` command to retrieve a hidden message from an audio file.
@@ -125,7 +128,7 @@ Use the ```extract``` command to retrieve a hidden message from an audio file.
 ./target/release/sw extract --help
 ```
 
-### todo: image extract --help
+![image](https://github.com/user-attachments/assets/55529cb8-f33d-4ef6-aa26-1c8d7c7e547b)
 
 Command Syntax
 ```shell
@@ -133,7 +136,12 @@ Command Syntax
 ```
 
 - extract successfully
+![image](https://github.com/user-attachments/assets/5067e437-40f2-44d9-b77a-59e4227169ad)
 - extract failed(password is incorrect)
+![image](https://github.com/user-attachments/assets/eee9e1c4-b66d-4a50-937e-e892f6de6156)
+
+
+
 
 ### Clearing a hidden message
 The ```clear``` command removes the hidden message from an audio file.
@@ -142,11 +150,11 @@ The ```clear``` command removes the hidden message from an audio file.
 ./target/release/sw clear --help 
 ```
 
-### todo: image clear --help
+![image](https://github.com/user-attachments/assets/fc17c4d6-df5f-4bc5-9f1f-063a38642f77)
 
 Command Syntax
 ```shell
-./target/release/sw  extract --password "qwerty" --file_name sw_bird.wav --format wav16 --server auto --lsb_deep 1
+./target/release/sw  extract --password "qwerty1234" --file_name sw_bird.wav --format wav16 --server auto --lsb_deep 1
 ```
 
 --- 
