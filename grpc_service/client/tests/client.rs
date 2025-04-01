@@ -115,15 +115,7 @@ async fn test_grpc_client() -> Result<(), Box<dyn Error>> {
     let addr: SocketAddr = settings.address().parse()?;
 
     let _ = tokio::spawn(run_server(
-        addr.clone()
-            .clone()
-            .clone()
-            .clone()
-            .clone()
-            .clone()
-            .clone()
-            .clone()
-            .clone(),
+        addr.clone(),
         settings,
     ));
 
