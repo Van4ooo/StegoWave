@@ -16,7 +16,7 @@ impl HideRequest {
 }
 
 impl ExtractRequest {
-    pub fn create_by_chunk(chunk: &[u8]) -> Self {
+    pub fn create_by_chunk(chunk: &[u8]) -> ExtractRequest {
         Self {
             file: chunk.to_owned(),
             password: "".to_string(),
@@ -27,7 +27,7 @@ impl ExtractRequest {
 }
 
 impl ClearRequest {
-    pub fn create_by_chunk(chunk: &[u8]) -> Self {
+    pub fn create_by_chunk(chunk: &[u8]) -> ClearRequest {
         Self {
             file: chunk.to_owned(),
             password: "".to_string(),

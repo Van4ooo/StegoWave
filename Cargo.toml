@@ -3,9 +3,9 @@ resolver = "2"
 members = [
     "rest_service/client",
     "rest_service/server",
-    "grpc_service",
+    "grpc_service/client",
+    "grpc_service/server",
     "stego_wave",
-    "tests_clients",
     "cli",
 ]
 

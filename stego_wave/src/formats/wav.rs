@@ -1,3 +1,4 @@
+use crate::configuration::Settings;
 use crate::error::StegoError;
 use crate::object::{
     AudioFileSpec, AudioSteganography, ByteIterator, ResultStego, UniqueRandomIndices,
@@ -7,14 +8,6 @@ use std::io::Cursor;
 use std::iter;
 use std::path::{Path, PathBuf};
 
-const LSB_DEEP_DEFAULT: u8 = 1;
-const MAX_OCCUPANCY: usize = 70;
-const HEADER: &str = "STEG";
-
-const fn lsb_deep_default() -> u8 {
-    LSB_DEEP_DEFAULT
-}
-
 /// A steganography encoder/decoder for 16-bit WAV audio files.
 ///
 /// This struct provides methods for hiding and extracting messages in 16-bit WAV files.
@@ -22,23 +15,26 @@ const fn lsb_deep_default() -> u8 {
 /// # Examples
 ///
 /// ```rust
-/// # use stego_wave::{formats::wav::WAV16, AudioSteganography};
-///  // Create a default WAV16 instance (lsb_deep = 1)
-/// let wav16 = WAV16::default();
-///  // Create WAV16 instance with custom lsb_dep
-/// let wav16 =  WAV16::builder().lsb_deep(4).build().unwrap();
+/// # use stego_wave::{formats::wav::WAV16, AudioSteganography, configuration::Settings};
+/// let wav16 = WAV16::builder().lsb_deep(1).settings(Settings::new("../sw_config.toml").unwrap()).build().unwrap();
 /// ```
 #[derive(Builder, Debug, PartialEq)]
 #[builder(build_fn(validate = "Self::validate"))]
 #[builder(name = "WAV16Builder")]
 pub struct WAV16 {
-    #[builder(default = "lsb_deep_default()")]
     lsb_deep: u8,
+    #[builder(default)]
+    settings: Settings,
 }
 
 impl Default for WAV16 {
     fn default() -> Self {
-        WAV16::builder().build().unwrap()
+        let setting = Settings::default();
+        WAV16::builder()
+            .lsb_deep(setting.stego_wave_lib.default_lsb_deep)
+            .settings(setting)
+            .build()
+            .unwrap()
     }
 }
 
@@ -56,12 +52,20 @@ impl WAV16Builder {
 }
 
 impl WAV16 {
+    fn max_occupancy(&self) -> usize {
+        self.settings.stego_wave_lib.max_occupancy
+    }
+
+    fn header(&self) -> &str {
+        &self.settings.stego_wave_lib.header
+    }
+
     fn is_enough_samples(&self, msg_len: usize, samples_len: usize) -> ResultStego<()> {
         let msg_bits = msg_len * 8;
-        let total_bits = samples_len * (self.lsb_deep as usize) * MAX_OCCUPANCY / 100;
+        let total_bits = samples_len * (self.lsb_deep as usize) * self.max_occupancy() / 100;
 
         if msg_bits > total_bits {
-            let required_bits = msg_bits * 100 / MAX_OCCUPANCY;
+            let required_bits = msg_bits * 100 / self.max_occupancy();
             let required_samples = required_bits / (self.lsb_deep as usize);
             return Err(StegoError::NotEnoughSamples(required_samples + 1));
         }
@@ -87,7 +91,7 @@ impl WAV16 {
         samples: &'a [i16],
         indicates_iter: &'a mut I,
     ) -> ResultStego<ByteIterator<'a, &'a mut I, i16>> {
-        let mut header_bytes = Vec::with_capacity(HEADER.len());
+        let mut header_bytes = Vec::with_capacity(self.header().len());
 
         let mut byte_iterator = ByteIterator::new(
             samples,
@@ -101,12 +105,12 @@ impl WAV16 {
         for byte in &mut byte_iterator {
             header_bytes.push(byte);
 
-            if header_bytes.len() == HEADER.len() {
+            if header_bytes.len() == self.header().len() {
                 break;
             }
         }
 
-        if header_bytes == HEADER.as_bytes() {
+        if header_bytes == self.header().as_bytes() {
             Ok(byte_iterator)
         } else {
             Err(StegoError::IncorrectPassword)
@@ -172,11 +176,12 @@ impl AudioSteganography<i16> for WAV16 {
     /// # Examples
     ///
     /// ```rust
-    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography};
+    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography, configuration::Settings};
+    /// # let wav16 = WAV16::builder().lsb_deep(1).settings(Settings::new("../sw_config.toml").unwrap()).build().unwrap();
+    ///
     /// let mut samples = vec![8; 1_000];
-    /// let wav = WAV16::default();
-    /// wav.hide_message_binary(&mut samples, "Test message", "_").unwrap();
-    /// let res = wav.extract_message_binary(&samples, "_").unwrap();
+    /// wav16.hide_message_binary(&mut samples, "Test message", "_").unwrap();
+    /// let res = wav16.extract_message_binary(&samples, "_").unwrap();
     /// assert_eq!(res, "Test message");
     /// ```
     fn hide_message_binary(
@@ -185,14 +190,14 @@ impl AudioSteganography<i16> for WAV16 {
         message: &str,
         password: &str,
     ) -> ResultStego<()> {
-        let header_bytes = HEADER.as_bytes();
+        let header_bytes = self.header().as_bytes();
         let message_bytes = message.as_bytes();
 
         let total_bytes = header_bytes.len() + message_bytes.len() + 1;
         self.is_enough_samples(total_bytes, samples.len())?;
 
         let mask = !self.get_mask();
-        let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let indices_iter = UniqueRandomIndices::new(samples.len(), password, self.max_occupancy());
         let mut message = header_bytes
             .iter()
             .chain(message_bytes.iter())
@@ -260,15 +265,17 @@ impl AudioSteganography<i16> for WAV16 {
     /// # Examples
     ///
     /// ```rust
-    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography};
+    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography, configuration::Settings};
+    /// # let wav16 = WAV16::builder().lsb_deep(1).settings(Settings::new("../sw_config.toml").unwrap()).build().unwrap();
+    ///
     /// let mut samples = vec![8; 1_000];
-    /// let wav = WAV16::default();
-    /// wav.hide_message_binary(&mut samples, "Test message", "_").unwrap();
-    /// let res = wav.extract_message_binary(&samples, "_").unwrap();
+    /// wav16.hide_message_binary(&mut samples, "Test message", "_").unwrap();
+    /// let res = wav16.extract_message_binary(&samples, "_").unwrap();
     /// assert_eq!(res, "Test message");
     /// ```
     fn extract_message_binary(&self, samples: &[i16], password: &str) -> ResultStego<String> {
-        let mut indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let mut indices_iter =
+            UniqueRandomIndices::new(samples.len(), password, self.max_occupancy());
 
         let byte_iter = self.validate_header(samples, &mut indices_iter)?;
         let mut result: Vec<u8> = Vec::new();
@@ -295,9 +302,9 @@ impl AudioSteganography<i16> for WAV16 {
     ///
     /// # Examples
     /// ```
-    /// # use stego_wave::AudioSteganography;
-    /// # use stego_wave::formats::wav::WAV16;
-    /// let wav16 = WAV16::default();
+    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography, configuration::Settings};
+    /// # let wav16 = WAV16::builder().lsb_deep(1).settings(Settings::new("../sw_config.toml").unwrap()).build().unwrap();
+    ///
     /// let _ = wav16.clear_secret_message("hidden_message.wav", "my_password");
     /// ```
     fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()> {
@@ -330,14 +337,15 @@ impl AudioSteganography<i16> for WAV16 {
     ///
     /// # Examples
     /// ```
-    /// # use stego_wave::AudioSteganography;
-    /// # use stego_wave::formats::wav::WAV16;
+    ///
+    /// # use stego_wave::{formats::wav::WAV16, AudioSteganography, configuration::Settings};
+    /// # let wav16 = WAV16::builder().lsb_deep(1).settings(Settings::new("../sw_config.toml").unwrap()).build().unwrap();
+    ///
     /// let mut samples = vec![1000, 2000, 3000, 4000];
-    /// let wav16 = WAV16::default();
     /// let _ = wav16.clear_secret_message_binary(&mut samples, "my_password");
     /// ```
     fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()> {
-        let indices_iter = UniqueRandomIndices::new(samples.len(), password, MAX_OCCUPANCY);
+        let indices_iter = UniqueRandomIndices::new(samples.len(), password, self.max_occupancy());
         let mask = self.get_mask();
 
         self.validate_header(samples, &mut indices_iter.clone())?;
@@ -436,11 +444,16 @@ mod tests {
     use std::error::Error;
     use std::fs;
 
+    const CONFIG_FILE: &str = "../sw_config.toml";
+
     #[test]
     fn extract_message_binary_success() -> Result<(), Box<dyn Error>> {
         let sample: &mut [i16; 1_000] = &mut [8; 1_000];
         for i in 1..17 {
-            let wav16 = WAV16::builder().lsb_deep(i).build()?;
+            let wav16 = WAV16::builder()
+                .lsb_deep(i)
+                .settings(Settings::new(CONFIG_FILE).unwrap())
+                .build()?;
 
             wav16.hide_message_binary(sample, &format!("{i} test {i}"), "_")?;
             let res = wav16.extract_message_binary(sample, "_")?;
@@ -453,7 +466,11 @@ mod tests {
     #[test]
     fn extract_message_binary_failed() -> Result<(), Box<dyn Error>> {
         let sample: &mut [i16; 1_000] = &mut [8; 1_000];
-        let wav16 = WAV16::default();
+        let wav16 = WAV16::builder()
+            .lsb_deep(1)
+            .settings(Settings::new(CONFIG_FILE).unwrap())
+            .build()?;
+
         wav16.hide_message_binary(sample, "test", "qwerty1")?;
 
         assert!(wav16.extract_message_binary(sample, "qwerty2").is_err());
@@ -498,7 +515,11 @@ mod tests {
         let output_path = temp_path("output_full.wav");
         create_wav_file(&input_path, 16, &samples)?;
 
-        let wav16 = WAV16::default();
+        let wav16 = WAV16::builder()
+            .lsb_deep(1)
+            .settings(Settings::new(CONFIG_FILE).unwrap())
+            .build()?;
+
         let message = "Hello World!";
         let password = "qwerty1234";
 
@@ -521,7 +542,11 @@ mod tests {
         let output_path = temp_path("output_incorrect.wav");
         create_wav_file(&input_path, 16, &samples)?;
 
-        let wav16 = WAV16::default();
+        let wav16 = WAV16::builder()
+            .lsb_deep(1)
+            .settings(Settings::new(CONFIG_FILE).unwrap())
+            .build()?;
+
         let message = "Hello World!";
         let password = "qwerty1234";
 
@@ -546,7 +571,11 @@ mod tests {
         let output_path = temp_path("output_clear.wav");
         create_wav_file(&input_path, 16, &samples)?;
 
-        let wav16 = WAV16::default();
+        let wav16 = WAV16::builder()
+            .lsb_deep(1)
+            .settings(Settings::new(CONFIG_FILE).unwrap())
+            .build()?;
+
         let message = "Hello World!";
         let password = "qwerty1234";
 
@@ -574,7 +603,11 @@ mod tests {
         let output_path = temp_path("output_incorrect_bits_per_sample.wav");
         create_wav_file(&input_path, 8, &samples)?;
 
-        let res = WAV16::default().hide_message(&input_path, &output_path, "test", "rest");
+        let res = WAV16::builder()
+            .lsb_deep(1)
+            .settings(Settings::new(CONFIG_FILE).unwrap())
+            .build()?
+            .hide_message(&input_path, &output_path, "test", "rest");
 
         match res {
             Err(StegoError::InvalidFile(err)) => assert_eq!(err, "Only 16-bit WAV file supported"),

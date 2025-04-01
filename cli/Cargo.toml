@@ -9,10 +9,12 @@ clap = { version = "4.5.26", features = ["derive"]}
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"]}
 hound = "3.5.1"
 colored = "3.0.0"
+serde = { version = "1.0.217", features = ["derive"] }
+config = "0.15.5"
 
 stego_wave = { path = "../stego_wave" }
 rest_client = { path = "../rest_service/client" }
-grpc_client = { package = "grpc_service", path = "../grpc_service" }
+grpc_client = { path = "../grpc_service/client" }
 
 [[bin]]
 name = "sw"

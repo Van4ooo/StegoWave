@@ -1,24 +1,17 @@
-use actix_web::{App, HttpServer};
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
+use rest_server::{configuration, startup::run_server, tracing_config};
+use std::net::TcpListener;
 
-mod api;
-mod models;
-mod services;
-mod tracing_config;
+const CONFIG_FILE: &str = "sw_config.toml";
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_config::conf_logger();
 
-    let app = move || {
-        App::new().configure(api::stego_wave::routers).service(
-            SwaggerUi::new("/swagger-ui/{_:.*}")
-                .url("/api/openapi.json", api::api_docs::ApiDoc::openapi()),
-        )
-    };
+    let mut settings = configuration::Settings::new(CONFIG_FILE)?;
+    let stego_wave_setting = settings.get_stego_wave_lib_settings();
+    let listener = TcpListener::bind(settings.address())?;
 
-    HttpServer::new(app).bind(("0.0.0.0", 8080))?.run().await?;
+    run_server(listener, stego_wave_setting)?.await?;
 
     Ok(())
 }

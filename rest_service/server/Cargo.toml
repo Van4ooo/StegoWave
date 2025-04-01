@@ -15,9 +15,14 @@ chrono = "0.4.39"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing = "0.1.41"
 futures = "0.3.31"
+config = "0.15.5"
+tracing-actix-web = "0.7.15"
 
 stego_wave = {path = "../../stego_wave"}
 
 [[bin]]
 name = "rest_server"
 path = "main.rs"
+
+[lib]
+path = "lib.rs"

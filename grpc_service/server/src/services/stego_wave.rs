@@ -2,7 +2,9 @@ use crate::services::streaming::{
     AudioMetadata, aggregate_file_from_stream, stream_file_as_chunks,
 };
 use std::pin::Pin;
+use std::sync::Arc;
 use stego_wave::AudioSteganography;
+use stego_wave::configuration::{Settings, StegoWaveLib};
 use stego_wave::formats::get_stego_by_str;
 use tonic::codegen::tokio_stream::Stream;
 use tonic::{Request, Response, Status};
@@ -15,7 +17,19 @@ use crate::stego_wave_grpc::{
 const CHUNK_SIZE: usize = 1024 * 1024;
 
 #[derive(Default)]
-pub struct StegoWaveServiceImpl {}
+pub struct StegoWaveServiceImpl {
+    settings: Arc<Settings>,
+}
+
+impl StegoWaveServiceImpl {
+    pub fn new(settings: StegoWaveLib) -> Self {
+        Self {
+            settings: Arc::new(Settings {
+                stego_wave_lib: settings,
+            }),
+        }
+    }
+}
 
 #[tonic::async_trait]
 impl StegoWaveService for StegoWaveServiceImpl {
@@ -39,7 +53,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
             }
         };
 
-        let stego = match get_stego_by_str(&format, lsb_deep as _) {
+        let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
             Err(err) => return Err(Status::invalid_argument(err)),
         };
@@ -78,7 +92,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
             } => (password, format, lsb_deep),
         };
 
-        let stego = match get_stego_by_str(&format, lsb_deep as _) {
+        let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
             Err(err) => return Err(Status::invalid_argument(err)),
         };
@@ -114,7 +128,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
             } => (password, format, lsb_deep),
         };
 
-        let stego = match get_stego_by_str(&format, lsb_deep as _) {
+        let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
             Err(err) => return Err(Status::invalid_argument(err)),
         };

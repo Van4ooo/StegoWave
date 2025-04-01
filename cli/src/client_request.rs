@@ -1,4 +1,5 @@
 use crate::cli::{ClearCommand, Cli, Commands, ExtractCommand, HideCommand, StegoWaveServer};
+use crate::configuration::Settings;
 use crate::formating::{print_error, print_format, print_info, print_success};
 use colored::*;
 use std::fs;
@@ -8,32 +9,28 @@ use std::path::{Path, PathBuf};
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
 
-const GRPC_URL: &str = "http://[::1]:50051";
-const REST_URL: &str = "http://127.0.0.1:8080";
-const FILE_PREFIX: &str = "sw_";
-
-pub async fn client_request(cli: Cli) {
+pub async fn client_request(cli: Cli, settings: Settings) {
     match cli.commands {
         Commands::Hide(hide) => {
-            if let Err(err) = hide_command(hide).await {
+            if let Err(err) = hide_command(hide, settings).await {
                 print_error(err);
             };
         }
         Commands::Extract(extract) => {
-            if let Err(err) = extract_command(extract).await {
+            if let Err(err) = extract_command(extract, settings).await {
                 print_error(err);
             }
         }
         Commands::Clear(clear) => {
-            if let Err(err) = clear_command(clear).await {
+            if let Err(err) = clear_command(clear, settings).await {
                 print_error(err);
             }
         }
     }
 }
 
-async fn hide_command(hide: HideCommand) -> Result<(), String> {
-    let mut client = get_client(&hide.command.server).await?;
+async fn hide_command(hide: HideCommand, settings: Settings) -> Result<(), String> {
+    let mut client = get_client(&hide.command.server, &settings).await?;
     let file_byte = get_file_by_name(&hide.command.file_name)?;
 
     let result: Vec<u8> = client
@@ -52,7 +49,7 @@ async fn hide_command(hide: HideCommand) -> Result<(), String> {
         .await
         .map_err(map_client_error)?;
 
-    let output_file = add_prefix(&hide.command.file_name, FILE_PREFIX);
+    let output_file = add_prefix(&hide.command.file_name, &settings.sw.hide_file_prefix);
     write_response_to_file(&output_file, &result)?;
 
     print_format("input file", "output file");
@@ -61,8 +58,8 @@ async fn hide_command(hide: HideCommand) -> Result<(), String> {
     Ok(())
 }
 
-async fn extract_command(extract: ExtractCommand) -> Result<(), String> {
-    let mut client = get_client(&extract.command.server).await?;
+async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<(), String> {
+    let mut client = get_client(&extract.command.server, &settings).await?;
     let file_byte = get_file_by_name(&extract.command.file_name)?;
 
     let result: String = client
@@ -87,8 +84,8 @@ async fn extract_command(extract: ExtractCommand) -> Result<(), String> {
     Ok(())
 }
 
-async fn clear_command(clear: ClearCommand) -> Result<(), String> {
-    let mut client = get_client(&clear.command.server).await?;
+async fn clear_command(clear: ClearCommand, settings: Settings) -> Result<(), String> {
+    let mut client = get_client(&clear.command.server, &settings).await?;
     let file_byte = get_file_by_name(&clear.command.file_name)?;
 
     let result: Vec<u8> = client
@@ -107,7 +104,7 @@ async fn clear_command(clear: ClearCommand) -> Result<(), String> {
         .await
         .map_err(map_client_error)?;
 
-    let output_file = add_prefix(&clear.command.file_name, "_");
+    let output_file = add_prefix(&clear.command.file_name, &settings.sw.clear_file_prefix);
     write_response_to_file(&output_file, &result)?;
 
     print_format("input file", "cleared file");
@@ -128,8 +125,11 @@ fn add_prefix(file_path: &Path, prefix: &str) -> PathBuf {
 }
 
 #[inline]
-async fn get_client(server: &StegoWaveServer) -> Result<Box<dyn StegoWaveClient>, String> {
-    match _get_client(server).await {
+async fn get_client(
+    server: &StegoWaveServer,
+    settings: &Settings,
+) -> Result<Box<dyn StegoWaveClient>, String> {
+    match _get_client(server, settings).await {
         Ok(client) => Ok(client),
         Err(StegoWaveClientError::ConnectionFailed) => {
             Err("Failed to connect to the server".to_string())
@@ -141,30 +141,34 @@ async fn get_client(server: &StegoWaveServer) -> Result<Box<dyn StegoWaveClient>
 
 async fn _get_client(
     server: &StegoWaveServer,
+    settings: &Settings,
 ) -> Result<Box<dyn StegoWaveClient>, StegoWaveClientError> {
+    let grpc_address = settings.grpc_address();
+    let rest_address = settings.rest_address();
+
     match server {
         StegoWaveServer::Auto => {
-            if let Ok(client) = grpc_client::StegoWaveGrpcClient::new(GRPC_URL).await {
+            if let Ok(client) = grpc_client::StegoWaveGrpcClient::new(grpc_address.as_str()).await {
                 Ok(Box::new(client))
             } else {
                 print_error(format!(
                     "Failed to connect to gRPC server at {}",
-                    GRPC_URL.blue()
+                    grpc_address.blue()
                 ));
                 print_info(format!(
                     "Trying connect to REST server at {}",
-                    REST_URL.blue()
+                    rest_address.blue()
                 ));
-                let client = rest_client::StegoWaveRestClient::new(REST_URL).await?;
+                let client = rest_client::StegoWaveRestClient::new(rest_address.as_str()).await?;
                 Ok(Box::new(client))
             }
         }
         StegoWaveServer::GRPC => {
-            let client = grpc_client::StegoWaveGrpcClient::new(GRPC_URL).await?;
+            let client = grpc_client::StegoWaveGrpcClient::new(grpc_address.as_str()).await?;
             Ok(Box::new(client))
         }
         StegoWaveServer::REST => {
-            let client = rest_client::StegoWaveRestClient::new(REST_URL).await?;
+            let client = rest_client::StegoWaveRestClient::new(rest_address.as_str()).await?;
             Ok(Box::new(client))
         }
     }
