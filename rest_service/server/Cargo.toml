@@ -8,21 +8,20 @@ license.workspace = true
 [dependencies]
 actix-web = "4.9.0"
 actix-multipart = "0.7.2"
-serde = { version = "1.0.217", features = ["derive"] }
 utoipa = { version = "5.3.1", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "8.1.0", features = ["actix-web"] }
 chrono = "0.4.39"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing = "0.1.41"
 futures = "0.3.31"
-config = "0.15.5"
 tracing-actix-web = "0.7.15"
-
-stego_wave = {path = "../../stego_wave"}
+serde = { workspace = true }
+config = { workspace = true}
+stego_wave = { workspace = true }
 
 [[bin]]
 name = "rest_server"
-path = "main.rs"
+path = "src/main.rs"
 
 [lib]
-path = "lib.rs"
+path = "src/lib.rs"

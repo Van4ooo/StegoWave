@@ -7,17 +7,16 @@ license.workspace = true
 
 [dependencies]
 reqwest = { version = "0.12.12", features = ["multipart", "json"] }
-tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 url = "2.5.4"
-
-stego_wave = {path = "../../stego_wave"}
-async-trait = "0.1.85"
+async-trait = { workspace = true }
+tokio = { workspace = true }
+stego_wave = { workspace = true }
 
 [dev-dependencies]
-hound = "3.5.1"
 pretty_assertions = "1.4.1"
-rest_server = {path = "../server"}
+hound = { workspace = true }
+rest_server = { workspace = true }
 
 [lib]
 name = "rest_client"
-path = "lib.rs"
+path = "src/lib.rs"
