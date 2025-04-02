@@ -178,7 +178,6 @@ pub trait StegoWaveClient: Sync + Send {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         message: String,
         password: String,
         format: String,
@@ -188,7 +187,6 @@ pub trait StegoWaveClient: Sync + Send {
     async fn extract_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,
@@ -197,7 +195,6 @@ pub trait StegoWaveClient: Sync + Send {
     async fn clear_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,

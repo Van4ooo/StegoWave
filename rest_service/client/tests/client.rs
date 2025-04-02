@@ -45,7 +45,6 @@ async fn test_extract_message(
         match client
             .extract_message(
                 result.clone(),
-                "input_file.wav".to_string(),
                 password.to_string(),
                 "wav16".to_string(),
                 lsb_deep,
@@ -68,13 +67,7 @@ async fn test_extract_message(
 macro_rules! clear_message {
     ($client:expr, $result:expr, $password:expr) => {
         $client
-            .clear_message(
-                $result,
-                "input_full.wav".to_string(),
-                $password,
-                "wav16".to_string(),
-                1,
-            )
+            .clear_message($result, $password, "wav16".to_string(), 1)
             .await
     };
 }
@@ -91,7 +84,6 @@ async fn full_test_client(
     let result = client
         .hide_message(
             file_byte,
-            "input_full.wav".to_string(),
             "Secret Message".to_string(),
             "qwerty1234".to_string(),
             "wav16".to_string(),

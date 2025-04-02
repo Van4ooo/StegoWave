@@ -1,11 +1,7 @@
 use colored::Colorize;
 
 pub fn print_success_helper(left_msg: &str) {
-    eprintln!(
-        "{} {}",
-        "[SUCCESS]".green().bold(),
-        left_msg.white().bold()
-    );
+    eprintln!("{} {}", "[SUCCESS]".green().bold(), left_msg.white().bold());
 }
 
 #[macro_export]

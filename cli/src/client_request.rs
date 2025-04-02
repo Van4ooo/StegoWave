@@ -37,7 +37,6 @@ async fn hide_command(hide: HideCommand, settings: Settings) -> Result<()> {
     let result: Vec<u8> = client
         .hide_message(
             file_byte,
-            "_".to_string(),
             hide.message,
             password,
             hide.command.format.into(),
@@ -61,7 +60,6 @@ async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<
     let result: String = client
         .extract_message(
             file_byte,
-            "_".to_string(),
             password,
             extract.command.format.into(),
             extract.command.lsb_deep,
@@ -83,7 +81,6 @@ async fn clear_command(clear: ClearCommand, settings: Settings) -> Result<()> {
     let result: Vec<u8> = client
         .clear_message(
             file_byte,
-            "_".to_string(),
             password,
             clear.command.format.into(),
             clear.command.lsb_deep,

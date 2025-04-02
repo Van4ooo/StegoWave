@@ -37,14 +37,13 @@ impl StegoWaveClient for StegoWaveRestClient {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         message: String,
         password: String,
         format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
         let form = Form::new()
-            .part("file", Part::bytes(file).file_name(file_name))
+            .part("file", Part::bytes(file))
             .text("message", message)
             .text("password", password)
             .text("format", format)
@@ -75,13 +74,12 @@ impl StegoWaveClient for StegoWaveRestClient {
     async fn extract_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,
     ) -> Result<String, StegoWaveClientError> {
         let form = Form::new()
-            .part("file", Part::bytes(file).file_name(file_name))
+            .part("file", Part::bytes(file))
             .text("password", password)
             .text("format", format)
             .text("lsb_deep", lsb_deep.to_string());
@@ -110,13 +108,12 @@ impl StegoWaveClient for StegoWaveRestClient {
     async fn clear_message(
         &mut self,
         file: Vec<u8>,
-        file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
         let form = Form::new()
-            .part("file", Part::bytes(file).file_name(file_name))
+            .part("file", Part::bytes(file))
             .text("password", password)
             .text("format", format)
             .text("lsb_deep", lsb_deep.to_string());

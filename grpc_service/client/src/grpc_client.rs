@@ -40,7 +40,6 @@ impl StegoWaveClient for StegoWaveGrpcClient {
     async fn hide_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: String,
         message: String,
         password: String,
         format: String,
@@ -79,7 +78,6 @@ impl StegoWaveClient for StegoWaveGrpcClient {
     async fn extract_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,
@@ -116,7 +114,6 @@ impl StegoWaveClient for StegoWaveGrpcClient {
     async fn clear_message(
         &mut self,
         file: Vec<u8>,
-        _file_name: String,
         password: String,
         format: String,
         lsb_deep: u8,
