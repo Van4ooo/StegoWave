@@ -47,11 +47,10 @@ impl From<StegoWaveFormat> for String {
 #[derive(Debug, Parser)]
 pub struct CommonFields {
     #[arg(
-        long = "file_name",
-        short = 'i',
+        long = "input_file",
         help = "Path to the input audio file from which bytes will be read"
     )]
-    pub file_name: PathBuf,
+    pub input_file: Option<PathBuf>,
 
     #[arg(
         value_enum,
@@ -90,6 +89,12 @@ pub struct HideCommand {
 
     #[clap(flatten)]
     pub command: CommonFields,
+
+    #[arg(
+        long = "output_file",
+        help = "Path where the audio file with the hidden text will be saved."
+    )]
+    pub output_file: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -102,4 +107,10 @@ pub struct ExtractCommand {
 pub struct ClearCommand {
     #[clap(flatten)]
     pub command: CommonFields,
+
+    #[arg(
+        long = "output_file",
+        help = "Path where the audio file with the cleaned hidden text will be saved."
+    )]
+    pub output_file: Option<PathBuf>,
 }

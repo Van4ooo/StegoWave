@@ -13,16 +13,9 @@ pub struct RestConfig {
 }
 
 #[derive(Deserialize)]
-pub struct SWConfig {
-    pub hide_file_prefix: String,
-    pub clear_file_prefix: String,
-}
-
-#[derive(Deserialize)]
 pub struct Settings {
     pub rest: RestConfig,
     pub grpc: GrpcConfig,
-    pub sw: SWConfig,
 }
 
 impl Settings {

@@ -1,35 +1,24 @@
 use colored::Colorize;
-use std::fmt::Debug;
 
-#[inline]
-pub fn print_format(output_msg: &str) {
+pub fn print_success_helper(left_msg: &str) {
     eprintln!(
-        "{} {} -> {}",
-        "[FORMAT]".blue().bold(),
-        "input file".white().italic(),
-        output_msg.white().italic()
-    );
-}
-
-pub fn print_input_path<L: Debug>(left_msg: L) {
-    eprint!(
-        "{} {} -> ",
+        "{} {}",
         "[SUCCESS]".green().bold(),
-        format!("{:?}", left_msg).yellow().bold()
+        left_msg.white().bold()
     );
 }
 
 #[macro_export]
 macro_rules! print_success {
-    (file: $out_path:expr, $inp_path:expr) => {
-        print_format("output file");
-        print_input_path($inp_path);
-        println!("{}", format!("{:?}", $out_path).red().bold().underline());
+    (file: $out_path:expr) => {
+        print_success_helper("The output file is created");
+        print!("{}", format!("{}", $out_path).red().bold().underline());
+        eprintln!();
     };
 
-    (message: $message:expr, $inp_path:expr) => {
-        print_format("secret message");
-        print_input_path($inp_path);
+    (message: $message:expr) => {
+        print_success_helper("Secret message received");
         println!("{}", format!("{}", $message).red().bold().underline());
+        eprintln!();
     };
 }
