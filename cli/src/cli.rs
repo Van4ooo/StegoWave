@@ -82,13 +82,6 @@ pub struct CommonFields {
 #[derive(Debug, Parser)]
 pub struct HideCommand {
     #[arg(
-        long = "password",
-        short = 'p',
-        help = "Password used for encrypting the secret message"
-    )]
-    pub password: String,
-
-    #[arg(
         long = "message",
         short = 'm',
         help = "The secret message to hide inside the audio file"
@@ -101,26 +94,12 @@ pub struct HideCommand {
 
 #[derive(Debug, Parser)]
 pub struct ExtractCommand {
-    #[arg(
-        long = "password",
-        short = 'p',
-        help = "Password used to decrypt the hidden secret message"
-    )]
-    pub password: String,
-
     #[clap(flatten)]
     pub command: CommonFields,
 }
 
 #[derive(Debug, Parser)]
 pub struct ClearCommand {
-    #[arg(
-        long = "password",
-        short = 'p',
-        help = "Password used to remove the hidden secret message"
-    )]
-    pub password: String,
-
     #[clap(flatten)]
     pub command: CommonFields,
 }

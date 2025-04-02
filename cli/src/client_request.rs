@@ -32,6 +32,7 @@ pub async fn client_request(cli: Cli, settings: Settings) {
 async fn hide_command(hide: HideCommand, settings: Settings) -> Result<(), String> {
     let mut client = get_client(&hide.command.server, &settings).await?;
     let file_byte = get_file_by_name(&hide.command.file_name)?;
+    let password = read_user_password()?;
 
     let result: Vec<u8> = client
         .hide_message(
@@ -42,7 +43,7 @@ async fn hide_command(hide: HideCommand, settings: Settings) -> Result<(), Strin
                 .unwrap_or_default()
                 .to_string(),
             hide.message,
-            hide.password,
+            password,
             hide.command.format.into(),
             hide.command.lsb_deep,
         )
@@ -61,6 +62,7 @@ async fn hide_command(hide: HideCommand, settings: Settings) -> Result<(), Strin
 async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<(), String> {
     let mut client = get_client(&extract.command.server, &settings).await?;
     let file_byte = get_file_by_name(&extract.command.file_name)?;
+    let password = read_user_password()?;
 
     let result: String = client
         .extract_message(
@@ -71,7 +73,7 @@ async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<
                 .to_str()
                 .unwrap_or_default()
                 .to_string(),
-            extract.password,
+            password,
             extract.command.format.into(),
             extract.command.lsb_deep,
         )
@@ -87,6 +89,7 @@ async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<
 async fn clear_command(clear: ClearCommand, settings: Settings) -> Result<(), String> {
     let mut client = get_client(&clear.command.server, &settings).await?;
     let file_byte = get_file_by_name(&clear.command.file_name)?;
+    let password = read_user_password()?;
 
     let result: Vec<u8> = client
         .clear_message(
@@ -97,7 +100,7 @@ async fn clear_command(clear: ClearCommand, settings: Settings) -> Result<(), St
                 .to_str()
                 .unwrap_or_default()
                 .to_string(),
-            clear.password,
+            password,
             clear.command.format.into(),
             clear.command.lsb_deep,
         )
@@ -191,4 +194,11 @@ fn write_response_to_file(input_file: &Path, result: &[u8]) -> Result<(), String
         .map_err(|_err| format!("Failed to write byte to {:?}", input_file))?;
 
     Ok(())
+}
+
+fn read_user_password() -> Result<String, String> {
+    eprint!("[?] Enter password: ");
+    let password = rpassword::read_password().map_err(|err| err.to_string())?;
+
+    Ok(password)
 }
