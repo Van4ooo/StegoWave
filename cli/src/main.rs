@@ -1,19 +1,16 @@
-use crate::configuration::Settings;
-use clap::Parser;
+use colored::Colorize;
 
 mod cli;
 mod client_request;
 mod configuration;
 mod formating;
+mod startup;
 
 const CONFIG_FILE: &str = "sw_config.toml";
 
 #[tokio::main]
-async fn main() -> Result<(), config::ConfigError> {
-    let cli_args: cli::Cli = cli::Cli::parse();
-    let settings = Settings::new(CONFIG_FILE)?;
-
-    client_request::client_request(cli_args, settings).await;
-
-    Ok(())
+async fn main() {
+    if let Err(report) = startup::run().await {
+        eprintln!("{}: {:?}", "Failed".red(), report);
+    }
 }

@@ -6,6 +6,7 @@ authors.workspace = true
 
 [dependencies]
 clap = { version = "4.5.26", features = ["derive"]}
+color-eyre = { version = "0.6.3",  default-features = false}
 colored = "3.0.0"
 rpassword = "7.3.1"
 tokio = { workspace = true}

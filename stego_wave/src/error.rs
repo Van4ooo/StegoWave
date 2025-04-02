@@ -52,3 +52,21 @@ pub enum StegoWaveClientError {
     #[error("{0}")]
     Response(String),
 }
+
+impl StegoWaveClientError {
+    pub fn help_message(&self) -> Option<String> {
+        match self {
+            StegoWaveClientError::ConnectionFailed => {
+                Some("Ensure the server is running and check your network connection.".to_string())
+            }
+            StegoWaveClientError::RequestFailed => Some(
+                "Verify that the request parameters are correct and the server is available."
+                    .to_string(),
+            ),
+            StegoWaveClientError::UlrInvalid => {
+                Some("Check that the URL is in the correct format and reachable.".to_string())
+            }
+            StegoWaveClientError::Response(_) => None,
+        }
+    }
+}
