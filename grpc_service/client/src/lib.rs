@@ -3,6 +3,5 @@ pub mod stego_wave_grpc {
 }
 
 mod grpc_client;
-mod streaming;
 
 pub use grpc_client::StegoWaveGrpcClient;

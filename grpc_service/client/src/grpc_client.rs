@@ -1,21 +1,15 @@
 use crate::stego_wave_grpc::stego_wave_service_client::StegoWaveServiceClient;
 use crate::stego_wave_grpc::{ClearRequest, ExtractRequest, HideRequest};
-use crate::streaming::get_output_audio;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
-use tonic::Request;
 use tonic::transport::Channel;
 use url::Url;
 
-const CHUNK_SIZE: usize = 1024 * 1024;
+const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
 
 #[derive(Clone)]
 pub struct StegoWaveGrpcClient {
     client: StegoWaveServiceClient<Channel>,
-}
-
-fn create_chunks(file: &[u8], chunk_size: usize) -> impl Iterator<Item = &[u8]> {
-    file.chunks(chunk_size)
 }
 
 impl StegoWaveGrpcClient {
@@ -34,7 +28,10 @@ impl StegoWaveGrpcClient {
         .await
         .map_err(|_err| StegoWaveClientError::ConnectionFailed)?;
 
-        let client = StegoWaveServiceClient::new(channel);
+        let client = StegoWaveServiceClient::new(channel)
+            .max_decoding_message_size(MAX_MESSAGE_SIZE)
+            .max_encoding_message_size(MAX_MESSAGE_SIZE);
+
         Ok(Self { client })
     }
 }
@@ -49,34 +46,19 @@ impl StegoWaveClient for StegoWaveGrpcClient {
         format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
-        let mut first_chunk = true;
-        let request_stream = tokio_stream::iter(
-            create_chunks(&file, CHUNK_SIZE)
-                .map(|chunk| {
-                    if first_chunk {
-                        first_chunk = false;
-                        HideRequest {
-                            file: chunk.to_owned(),
-                            message: message.clone(),
-                            password: password.clone(),
-                            format: format.clone(),
-                            lsb_deep: lsb_deep as u32,
-                        }
-                    } else {
-                        HideRequest::create_by_chunk(chunk)
-                    }
-                })
-                .collect::<Vec<_>>(),
-        );
-
-        let response_stream = self
+        let response = self
             .client
-            .hide_message(Request::new(request_stream))
+            .hide_message(HideRequest {
+                file,
+                message,
+                password,
+                format,
+                lsb_deep: lsb_deep as _,
+            })
             .await
-            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
-            .into_inner();
+            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?;
 
-        get_output_audio(response_stream).await
+        Ok(response.into_inner().file)
     }
 
     async fn extract_message(
@@ -86,28 +68,14 @@ impl StegoWaveClient for StegoWaveGrpcClient {
         format: String,
         lsb_deep: u8,
     ) -> Result<String, StegoWaveClientError> {
-        let mut first_chunk = true;
-        let request_stream = tokio_stream::iter(
-            create_chunks(&file, CHUNK_SIZE)
-                .map(|chunk| {
-                    if first_chunk {
-                        first_chunk = false;
-                        ExtractRequest {
-                            file: chunk.to_owned(),
-                            password: password.clone(),
-                            format: format.clone(),
-                            lsb_deep: lsb_deep as u32,
-                        }
-                    } else {
-                        ExtractRequest::create_by_chunk(chunk)
-                    }
-                })
-                .collect::<Vec<_>>(),
-        );
-
         let response = self
             .client
-            .extract_message(Request::new(request_stream))
+            .extract_message(ExtractRequest {
+                file,
+                password,
+                format,
+                lsb_deep: lsb_deep as _,
+            })
             .await
             .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
             .into_inner();
@@ -122,32 +90,17 @@ impl StegoWaveClient for StegoWaveGrpcClient {
         format: String,
         lsb_deep: u8,
     ) -> Result<Vec<u8>, StegoWaveClientError> {
-        let mut first_chunk = true;
-        let request_stream = tokio_stream::iter(
-            create_chunks(&file, CHUNK_SIZE)
-                .map(|chunk| {
-                    if first_chunk {
-                        first_chunk = false;
-                        ClearRequest {
-                            file: chunk.to_owned(),
-                            password: password.clone(),
-                            format: format.clone(),
-                            lsb_deep: lsb_deep as u32,
-                        }
-                    } else {
-                        ClearRequest::create_by_chunk(chunk)
-                    }
-                })
-                .collect::<Vec<_>>(),
-        );
-
-        let response_stream = self
+        let response = self
             .client
-            .clear_message(Request::new(request_stream))
+            .clear_message(ClearRequest {
+                file,
+                password,
+                format,
+                lsb_deep: lsb_deep as _,
+            })
             .await
-            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?
-            .into_inner();
+            .map_err(|err| StegoWaveClientError::Response(err.message().to_string()))?;
 
-        get_output_audio(response_stream).await
+        Ok(response.into_inner().file)
     }
 }

@@ -13,7 +13,6 @@ path = "src/main.rs"
 path = "src/lib.rs"
 
 [dependencies]
-futures = "0.3.31"
 tokio-stream = "0.1.17"
 bytes = "1.9.0"
 async-trait = { workspace = true }

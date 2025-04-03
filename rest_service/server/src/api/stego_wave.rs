@@ -40,6 +40,15 @@ macro_rules! get_required_field {
     }};
 }
 
+macro_rules! get_stego {
+    ($format:expr, $lsb_deep:expr, $settings:expr) => {
+        match get_stego_by_str(&$format, $lsb_deep as _, (*$settings.into_inner()).clone()) {
+            Ok(stego) => stego,
+            Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
+        }
+    };
+}
+
 #[utoipa::path(
     post,
     tag = "StegoWave",
@@ -59,10 +68,7 @@ pub async fn hide_message(payload: Multipart, settings: web::Data<StegoWaveLib>)
     let (file_bytes, message, password, format, lsb_deep) =
         get_required_field!(payload, true, true, true, true);
 
-    let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
-        Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
-    };
+    let stego = get_stego!(format, lsb_deep, settings);
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
@@ -98,10 +104,7 @@ pub async fn extract_message(
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 
-    let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
-        Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
-    };
+    let stego = get_stego!(format, lsb_deep, settings);
 
     let (samples, _) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
@@ -139,10 +142,7 @@ pub async fn clear_message(
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 
-    let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
-        Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
-    };
+    let stego = get_stego!(format, lsb_deep, settings);
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
