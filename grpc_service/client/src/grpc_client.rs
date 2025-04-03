@@ -20,17 +20,21 @@ fn create_chunks(file: &[u8], chunk_size: usize) -> impl Iterator<Item = &[u8]> 
 
 impl StegoWaveGrpcClient {
     pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
-        let rest_url = url
+        let grpc_url = url
             .try_into()
             .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
 
-        let url_owned = rest_url.to_string();
-        let static_url: &'static str = Box::leak(url_owned.into_boxed_str());
+        let channel = Channel::builder(
+            grpc_url
+                .as_str()
+                .parse()
+                .map_err(|_err| StegoWaveClientError::UlrInvalid)?,
+        )
+        .connect()
+        .await
+        .map_err(|_err| StegoWaveClientError::ConnectionFailed)?;
 
-        let client = StegoWaveServiceClient::connect(static_url)
-            .await
-            .map_err(|_err| StegoWaveClientError::ConnectionFailed)?;
-
+        let client = StegoWaveServiceClient::new(channel);
         Ok(Self { client })
     }
 }

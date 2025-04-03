@@ -29,7 +29,7 @@ pub enum StegoWaveClientError {
     #[error("Request failed")]
     RequestFailed,
 
-    #[error("Invalid URL")]
+    #[error("Invalid server URL")]
     UlrInvalid,
 
     #[error("{0}")]
