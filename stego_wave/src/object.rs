@@ -34,9 +34,21 @@ pub trait AudioSteganography<S> {
         password: impl AsRef<str>,
     ) -> ResultStego<String>;
 
-    fn extract_message_binary(&self, samples: &[S], password: impl AsRef<str>) -> ResultStego<String>;
-    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: impl AsRef<str>) -> ResultStego<()>;
-    fn clear_secret_message_binary(&self, samples: &mut [S], password: impl AsRef<str>) -> ResultStego<()>;
+    fn extract_message_binary(
+        &self,
+        samples: &[S],
+        password: impl AsRef<str>,
+    ) -> ResultStego<String>;
+    fn clear_secret_message(
+        &self,
+        file: impl Into<PathBuf>,
+        password: impl AsRef<str>,
+    ) -> ResultStego<()>;
+    fn clear_secret_message_binary(
+        &self,
+        samples: &mut [S],
+        password: impl AsRef<str>,
+    ) -> ResultStego<()>;
     fn validate_file(&self, file: &Path) -> ResultStego<()>;
     fn read_samples_from_byte(&self, byte: Vec<u8>) -> ResultStego<(Vec<S>, AudioFileSpec)>;
     fn write_samples_to_byte(&self, spec: AudioFileSpec, samples: &[S]) -> ResultStego<Vec<u8>>;

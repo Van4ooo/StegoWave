@@ -12,7 +12,7 @@ macro_rules! audio_response_from_samples {
     ($stego:expr, $spec:expr, $samples:expr) => {{
         let out_buf = match $stego.write_samples_to_byte($spec, &$samples) {
             Ok(buf) => buf,
-            Err(err) => return HttpResponse::InternalServerError().body(format!("{err}")),
+            Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
         };
 
         HttpResponse::Ok()
@@ -66,11 +66,11 @@ pub async fn hide_message(payload: Multipart, settings: web::Data<StegoWaveLib>)
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
-        Err(err) => return HttpResponse::InternalServerError().body(format!("{err}")),
+        Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
     if let Err(err) = stego.hide_message_binary(&mut samples, &message, &password) {
-        return HttpResponse::InternalServerError().body(format!("{err}"));
+        return HttpResponse::InternalServerError().body(err.to_string());
     }
 
     audio_response_from_samples!(stego, spec, samples)
@@ -105,15 +105,15 @@ pub async fn extract_message(
 
     let (samples, _) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
-        Err(err) => return HttpResponse::InternalServerError().body(format!("{err}")),
+        Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
     match stego.extract_message_binary(&samples, &password) {
         Ok(msg) => HttpResponse::Ok().body(msg),
         Err(StegoError::IncorrectPassword) => {
-            HttpResponse::BadRequest().body(format!("{}", StegoError::IncorrectPassword))
+            HttpResponse::BadRequest().body(StegoError::IncorrectPassword.to_string())
         }
-        Err(err) => HttpResponse::InternalServerError().body(format!("{err}")),
+        Err(err) => HttpResponse::InternalServerError().body(err.to_string()),
     }
 }
 
@@ -146,15 +146,15 @@ pub async fn clear_message(
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
         Ok(data) => data,
-        Err(err) => return HttpResponse::InternalServerError().body(format!("{err}")),
+        Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
     match stego.clear_secret_message_binary(&mut samples, &password) {
         Ok(()) => {}
         Err(StegoError::IncorrectPassword) => {
-            return HttpResponse::BadRequest().body(format!("{}", StegoError::IncorrectPassword));
+            return HttpResponse::BadRequest().body(StegoError::IncorrectPassword.to_string());
         }
-        Err(err) => return HttpResponse::InternalServerError().body(format!("{err}")),
+        Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     }
 
     audio_response_from_samples!(stego, spec, samples)
