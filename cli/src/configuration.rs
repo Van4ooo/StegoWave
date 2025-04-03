@@ -1,21 +1,13 @@
+use grpc_server::configuration::GrpcConfig;
+use rest_server::configuration::RestConfig;
 use serde::Deserialize;
-
-#[derive(Deserialize)]
-pub struct GrpcConfig {
-    pub host: String,
-    pub port: u32,
-}
-
-#[derive(Deserialize)]
-pub struct RestConfig {
-    pub host: String,
-    pub port: u32,
-}
+use stego_wave::configuration::StegoWaveLib;
 
 #[derive(Deserialize)]
 pub struct Settings {
     pub rest: RestConfig,
     pub grpc: GrpcConfig,
+    pub stego_wave_lib: StegoWaveLib,
 }
 
 impl Settings {
@@ -32,7 +24,15 @@ impl Settings {
         format!("http://{}:{}", self.grpc.host, self.grpc.port)
     }
 
+    pub fn grpc_server_address(&self) -> String {
+        format!("{}:{}", self.grpc.host, self.grpc.port)
+    }
+
     pub fn rest_address(&self) -> String {
         format!("http://{}:{}", self.rest.host, self.rest.port)
+    }
+
+    pub fn rest_server_address(&self) -> String {
+        format!("{}:{}", self.rest.host, self.rest.port)
     }
 }

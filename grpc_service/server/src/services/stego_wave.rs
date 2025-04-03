@@ -4,7 +4,7 @@ use crate::services::streaming::{
 use std::pin::Pin;
 use std::sync::Arc;
 use stego_wave::AudioSteganography;
-use stego_wave::configuration::{Settings, StegoWaveLib};
+use stego_wave::configuration::StegoWaveLib;
 use stego_wave::formats::get_stego_by_str;
 use tonic::codegen::tokio_stream::Stream;
 use tonic::{Request, Response, Status};
@@ -18,15 +18,13 @@ const CHUNK_SIZE: usize = 1024 * 1024;
 
 #[derive(Default)]
 pub struct StegoWaveServiceImpl {
-    settings: Arc<Settings>,
+    settings: Arc<StegoWaveLib>,
 }
 
 impl StegoWaveServiceImpl {
     pub fn new(settings: StegoWaveLib) -> Self {
         Self {
-            settings: Arc::new(Settings {
-                stego_wave_lib: settings,
-            }),
+            settings: Arc::new(settings),
         }
     }
 }

@@ -27,11 +27,7 @@ impl Settings {
         format!("{}:{}", self.rest.host, self.rest.port)
     }
 
-    pub fn get_stego_wave_lib_settings(&mut self) -> stego_wave::configuration::Settings {
-        let settings = mem::take(&mut self.stego_wave_lib);
-
-        stego_wave::configuration::Settings {
-            stego_wave_lib: settings,
-        }
+    pub fn get_stego_wave_lib_settings(&mut self) -> StegoWaveLib {
+        mem::take(&mut self.stego_wave_lib)
     }
 }

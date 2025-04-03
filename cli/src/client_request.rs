@@ -2,44 +2,88 @@ use crate::cli::{ClearCommand, Cli, Commands, ExtractCommand, HideCommand, Stego
 use crate::configuration::Settings;
 use crate::formating::print_success_helper;
 use crate::print_success;
-use color_eyre::eyre::Context;
+use color_eyre::eyre::eyre;
 use color_eyre::{Report, Result, Section};
 use colored::Colorize;
 use std::io;
 use std::io::{Write, stderr};
+use std::net::SocketAddr;
+use std::net::TcpListener;
 use std::path::PathBuf;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 pub async fn client_request(cli: Cli, settings: Settings) -> Result<()> {
-    match cli.commands {
-        Commands::Hide(hide) => hide_command(hide, settings)
-            .await
-            .wrap_err("Error executing <hide> command"),
-        Commands::Extract(extract) => extract_command(extract, settings)
-            .await
-            .wrap_err("Error executing <extract> command"),
-        Commands::Clear(clear) => clear_command(clear, settings)
-            .await
-            .wrap_err("Error executing <clear> command"),
+    let password = read_user_password()?;
+
+    if let Err(err) = query_attempt(&cli, &settings, &password).await {
+        if err.to_string() == "Connection failed" {
+            run_server(&cli, &settings).await?;
+            query_attempt(&cli, &settings, &password).await?;
+        } else {
+            return Err(err);
+        }
+    }
+    Ok(())
+}
+
+pub async fn query_attempt(cli: &Cli, settings: &Settings, password: &str) -> Result<()> {
+    match cli.get_command() {
+        Commands::Hide(hide) => hide_command(hide, settings, password).await,
+        Commands::Extract(extract) => extract_command(extract, settings, password).await,
+        Commands::Clear(clear) => clear_command(clear, settings, password).await,
     }
 }
 
-async fn hide_command(hide: HideCommand, settings: Settings) -> Result<()> {
-    let mut client = get_client(&hide.command.server, &settings)
+pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
+    if !cli.get_start_server() {
+        return Err(eyre!("Failed to connect to the servers.")
+            .suggestion("Try using the '--start-server' flag and the program will start the server automatically"));
+    }
+
+    match cli.get_server() {
+        StegoWaveServer::Auto => {
+            return Err(
+                eyre!("Automatic server selection is not supported.").suggestion(
+                    "Specify a server explicitly using '--server grpc' or '--server rest'",
+                ),
+            );
+        }
+        StegoWaveServer::GRPC => {
+            let addr: SocketAddr = settings.grpc_server_address().parse()?;
+
+            drop(tokio::spawn(grpc_server::startup::run_server(
+                addr,
+                settings.stego_wave_lib.clone(),
+            )));
+        }
+        StegoWaveServer::REST => {
+            let listener: TcpListener = TcpListener::bind(settings.rest_server_address())?;
+
+            let server =
+                rest_server::startup::run_server(listener, settings.stego_wave_lib.clone())?;
+
+            drop(tokio::spawn(server));
+        }
+    }
+
+    Ok(())
+}
+
+async fn hide_command(hide: &HideCommand, settings: &Settings, password: &str) -> Result<()> {
+    let mut client = get_client(&hide.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
     let file_byte = get_input_file(&hide.command.input_file).await?;
-    let password = read_user_password()?;
 
     let result: Vec<u8> = client
         .hide_message(
             file_byte,
-            hide.message,
-            password,
-            hide.command.format.into(),
+            hide.message.clone(),
+            password.to_string(),
+            hide.command.format.clone().into(),
             hide.command.lsb_deep,
         )
         .await?;
@@ -49,19 +93,22 @@ async fn hide_command(hide: HideCommand, settings: Settings) -> Result<()> {
     Ok(())
 }
 
-async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<()> {
-    let mut client = get_client(&extract.command.server, &settings)
+async fn extract_command(
+    extract: &ExtractCommand,
+    settings: &Settings,
+    password: &str,
+) -> Result<()> {
+    let mut client = get_client(&extract.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
     let file_byte = get_input_file(&extract.command.input_file).await?;
-    let password = read_user_password()?;
 
     let result: String = client
         .extract_message(
             file_byte,
-            password,
-            extract.command.format.into(),
+            password.to_string(),
+            extract.command.format.clone().into(),
             extract.command.lsb_deep,
         )
         .await?;
@@ -70,19 +117,18 @@ async fn extract_command(extract: ExtractCommand, settings: Settings) -> Result<
     Ok(())
 }
 
-async fn clear_command(clear: ClearCommand, settings: Settings) -> Result<()> {
-    let mut client = get_client(&clear.command.server, &settings)
+async fn clear_command(clear: &ClearCommand, settings: &Settings, password: &str) -> Result<()> {
+    let mut client = get_client(&clear.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
     let file_byte = get_input_file(&clear.command.input_file).await?;
-    let password = read_user_password()?;
 
     let result: Vec<u8> = client
         .clear_message(
             file_byte,
-            password,
-            clear.command.format.into(),
+            password.to_string(),
+            clear.command.format.clone().into(),
             clear.command.lsb_deep,
         )
         .await?;

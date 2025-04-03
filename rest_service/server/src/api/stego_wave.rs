@@ -1,7 +1,7 @@
 use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Responder, post, web};
 use stego_wave::AudioSteganography;
-use stego_wave::configuration::Settings;
+use stego_wave::configuration::StegoWaveLib;
 use stego_wave::error::StegoError;
 use stego_wave::formats::get_stego_by_str;
 
@@ -55,7 +55,7 @@ macro_rules! get_required_field {
     )
 )]
 #[post("/api/hide_message")]
-pub async fn hide_message(payload: Multipart, settings: web::Data<Settings>) -> impl Responder {
+pub async fn hide_message(payload: Multipart, settings: web::Data<StegoWaveLib>) -> impl Responder {
     let (file_bytes, message, password, format, lsb_deep) =
         get_required_field!(payload, true, true, true, true);
 
@@ -91,7 +91,10 @@ pub async fn hide_message(payload: Multipart, settings: web::Data<Settings>) -> 
     )
 )]
 #[post("/api/extract_message")]
-pub async fn extract_message(payload: Multipart, settings: web::Data<Settings>) -> impl Responder {
+pub async fn extract_message(
+    payload: Multipart,
+    settings: web::Data<StegoWaveLib>,
+) -> impl Responder {
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 
@@ -129,7 +132,10 @@ pub async fn extract_message(payload: Multipart, settings: web::Data<Settings>) 
     )
 )]
 #[post("/api/clear_message")]
-pub async fn clear_message(payload: Multipart, settings: web::Data<Settings>) -> impl Responder {
+pub async fn clear_message(
+    payload: Multipart,
+    settings: web::Data<StegoWaveLib>,
+) -> impl Responder {
     let (file_bytes, _, password, format, lsb_deep) =
         get_required_field!(payload, true, false, true, true);
 

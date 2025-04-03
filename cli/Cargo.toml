@@ -16,6 +16,8 @@ config = { workspace = true }
 stego_wave = { workspace = true}
 rest_client = { workspace = true }
 grpc_client = { workspace = true }
+grpc_server = { workspace = true }
+rest_server = { workspace = true }
 
 [[bin]]
 name = "sw"

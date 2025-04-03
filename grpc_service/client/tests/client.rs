@@ -106,7 +106,7 @@ async fn test_grpc_client() -> Result<(), Box<dyn Error>> {
     let settings = grpc_server::configuration::Settings::new("../../sw_config")?;
     let addr: SocketAddr = settings.address().parse()?;
 
-    let _ = tokio::spawn(run_server(addr.clone(), settings));
+    let _ = tokio::spawn(run_server(addr.clone(), settings.stego_wave_lib));
 
     let addrs = format!("http://{}", addr);
     let client = StegoWaveGrpcClient::new(addrs.as_str()).await?;

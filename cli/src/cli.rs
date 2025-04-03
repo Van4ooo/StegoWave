@@ -13,6 +13,27 @@ pub struct Cli {
     pub(crate) commands: Commands,
 }
 
+impl Cli {
+    pub fn get_command(&self) -> &Commands {
+        &self.commands
+    }
+    pub fn get_server(&self) -> StegoWaveServer {
+        match self.get_command() {
+            Commands::Hide(hide) => hide.command.server.clone(),
+            Commands::Extract(extract) => extract.command.server.clone(),
+            Commands::Clear(clear) => clear.command.server.clone(),
+        }
+    }
+
+    pub fn get_start_server(&self) -> bool {
+        match self.get_command() {
+            Commands::Hide(hide) => hide.command.start_server,
+            Commands::Extract(extract) => extract.command.start_server,
+            Commands::Clear(clear) => clear.command.start_server,
+        }
+    }
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     #[command(about = "Hides a secret message in an audio file")]
@@ -68,6 +89,13 @@ pub struct CommonFields {
         help = "The name of the server to be used"
     )]
     pub server: StegoWaveServer,
+
+    #[arg(
+        long = "start-server",
+        default_value_t = false,
+        help = "Automatically start the server if it's not running"
+    )]
+    pub start_server: bool,
 
     #[arg(
         long = "lsb_deep",
