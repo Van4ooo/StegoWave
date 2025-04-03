@@ -17,26 +17,26 @@ pub trait AudioSteganography<S> {
         &self,
         file_input: impl Into<PathBuf>,
         file_output: impl Into<PathBuf>,
-        message: impl Into<String>,
-        password: impl Into<String>,
+        message: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> ResultStego<()>;
 
     fn hide_message_binary(
         &self,
         samples: &mut [S],
-        message: &str,
-        password: &str,
+        message: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> ResultStego<()>;
 
     fn extract_message(
         &self,
         file: impl Into<PathBuf>,
-        password: impl Into<String>,
+        password: impl AsRef<str>,
     ) -> ResultStego<String>;
 
-    fn extract_message_binary(&self, samples: &[S], password: &str) -> ResultStego<String>;
-    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()>;
-    fn clear_secret_message_binary(&self, samples: &mut [S], password: &str) -> ResultStego<()>;
+    fn extract_message_binary(&self, samples: &[S], password: impl AsRef<str>) -> ResultStego<String>;
+    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: impl AsRef<str>) -> ResultStego<()>;
+    fn clear_secret_message_binary(&self, samples: &mut [S], password: impl AsRef<str>) -> ResultStego<()>;
     fn validate_file(&self, file: &Path) -> ResultStego<()>;
     fn read_samples_from_byte(&self, byte: Vec<u8>) -> ResultStego<(Vec<S>, AudioFileSpec)>;
     fn write_samples_to_byte(&self, spec: AudioFileSpec, samples: &[S]) -> ResultStego<Vec<u8>>;
@@ -57,9 +57,9 @@ pub struct UniqueRandomIndices {
 }
 
 impl UniqueRandomIndices {
-    pub fn new(sample_len: usize, password: &str, max_occupancy: usize) -> Self {
+    pub fn new(sample_len: usize, password: impl AsRef<str>, max_occupancy: usize) -> Self {
         let mut hasher = DefaultHasher::new();
-        password.hash(&mut hasher);
+        password.as_ref().hash(&mut hasher);
 
         let seed = hasher.finish();
         let rng = ChaCha8Rng::seed_from_u64(seed);

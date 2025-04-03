@@ -143,8 +143,8 @@ impl AudioSteganography<i16> for WAV16 {
         &self,
         file_input: impl Into<PathBuf>,
         file_output: impl Into<PathBuf>,
-        message: impl Into<String>,
-        password: impl Into<String>,
+        message: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> ResultStego<()> {
         let input_path = file_input.into();
         let output_path = file_output.into();
@@ -153,7 +153,7 @@ impl AudioSteganography<i16> for WAV16 {
         let mut reader = hound::WavReader::open(&input_path)?;
         let mut samples = Self::read_sample(&mut reader)?;
 
-        self.hide_message_binary(&mut samples, &message.into(), &password.into())?;
+        self.hide_message_binary(&mut samples, message, password)?;
 
         let mut writer = hound::WavWriter::create(output_path, reader.spec())?;
         for sample in samples {
@@ -187,11 +187,11 @@ impl AudioSteganography<i16> for WAV16 {
     fn hide_message_binary(
         &self,
         samples: &mut [i16],
-        message: &str,
-        password: &str,
+        message: impl AsRef<str>,
+        password: impl AsRef<str>,
     ) -> ResultStego<()> {
         let header_bytes = self.header().as_bytes();
-        let message_bytes = message.as_bytes();
+        let message_bytes = message.as_ref().as_bytes();
 
         let total_bytes = header_bytes.len() + message_bytes.len() + 1;
         self.is_enough_samples(total_bytes, samples.len())?;
@@ -238,7 +238,7 @@ impl AudioSteganography<i16> for WAV16 {
     fn extract_message(
         &self,
         file: impl Into<PathBuf>,
-        password: impl Into<String>,
+        password: impl AsRef<str>,
     ) -> ResultStego<String> {
         let input_path = file.into();
         self.validate_file(&input_path)?;
@@ -246,7 +246,7 @@ impl AudioSteganography<i16> for WAV16 {
         let mut reader = hound::WavReader::open(&input_path)?;
         let samples = Self::read_sample(&mut reader)?;
 
-        self.extract_message_binary(&samples, &password.into())
+        self.extract_message_binary(&samples, password)
     }
 
     /// Extracts a hidden secret message from an array of samples.
@@ -273,7 +273,7 @@ impl AudioSteganography<i16> for WAV16 {
     /// let res = wav16.extract_message_binary(&samples, "_").unwrap();
     /// assert_eq!(res, "Test message");
     /// ```
-    fn extract_message_binary(&self, samples: &[i16], password: &str) -> ResultStego<String> {
+    fn extract_message_binary(&self, samples: &[i16], password: impl AsRef<str>) -> ResultStego<String> {
         let mut indices_iter =
             UniqueRandomIndices::new(samples.len(), password, self.max_occupancy());
 
@@ -307,7 +307,7 @@ impl AudioSteganography<i16> for WAV16 {
     ///
     /// let _ = wav16.clear_secret_message("hidden_message.wav", "my_password");
     /// ```
-    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: &str) -> ResultStego<()> {
+    fn clear_secret_message(&self, file: impl Into<PathBuf>, password: impl AsRef<str>) -> ResultStego<()> {
         let input_path = file.into();
         self.validate_file(&input_path)?;
 
@@ -344,7 +344,7 @@ impl AudioSteganography<i16> for WAV16 {
     /// let mut samples = vec![1000, 2000, 3000, 4000];
     /// let _ = wav16.clear_secret_message_binary(&mut samples, "my_password");
     /// ```
-    fn clear_secret_message_binary(&self, samples: &mut [i16], password: &str) -> ResultStego<()> {
+    fn clear_secret_message_binary(&self, samples: &mut [i16], password: impl AsRef<str>) -> ResultStego<()> {
         let indices_iter = UniqueRandomIndices::new(samples.len(), password, self.max_occupancy());
         let mask = self.get_mask();
 
