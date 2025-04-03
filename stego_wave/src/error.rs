@@ -1,41 +1,24 @@
-use std::error::Error;
-use std::fmt;
-use std::fmt::Formatter;
 use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum StegoError {
+    #[error("InvalidFileError: {0}")]
     InvalidFile(String),
+
+    #[error("NotEnoughSamplesError: minimum required {0}")]
     NotEnoughSamples(usize),
-    HoundError(hound::Error),
+
+    #[error("{0}")]
+    HoundError(#[from] hound::Error),
+
+    #[error("Error password is incorrect")]
     IncorrectPassword,
+
+    #[error("Could not receive message, file may be corrupted")]
     FailedToReceiveMessage,
+
+    #[error("{0}")]
     Other(String),
-}
-
-impl fmt::Display for StegoError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            StegoError::InvalidFile(err) => write!(f, "InvalidFileError: {err}"),
-            StegoError::HoundError(err) => write!(f, "{err}"),
-            StegoError::NotEnoughSamples(require_bits) => {
-                write!(f, "NotEnoughSamplesError: minimum required {require_bits}")
-            }
-            StegoError::IncorrectPassword => write!(f, "Error password is incorrect"),
-            StegoError::FailedToReceiveMessage => {
-                write!(f, "Could not receive message, file may be corrupted")
-            }
-            StegoError::Other(err) => write!(f, "{err}"),
-        }
-    }
-}
-
-impl Error for StegoError {}
-
-impl From<hound::Error> for StegoError {
-    fn from(value: hound::Error) -> Self {
-        StegoError::HoundError(value)
-    }
 }
 
 #[derive(Debug, Error)]
