@@ -61,7 +61,7 @@ pub async fn hide_message(payload: Multipart, settings: web::Data<StegoWaveLib>)
 
     let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
         Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err),
+        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
     };
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
@@ -100,7 +100,7 @@ pub async fn extract_message(
 
     let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
         Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err),
+        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
     };
 
     let (samples, _) = match stego.read_samples_from_byte(file_bytes) {
@@ -141,7 +141,7 @@ pub async fn clear_message(
 
     let stego = match get_stego_by_str(&format, lsb_deep, (*settings.into_inner()).clone()) {
         Ok(stego) => stego,
-        Err(err) => return HttpResponse::BadRequest().body(err),
+        Err(err) => return HttpResponse::BadRequest().body(err.to_string()),
     };
 
     let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {

@@ -53,7 +53,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
 
         let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
-            Err(err) => return Err(Status::invalid_argument(err)),
+            Err(err) => return Err(Status::invalid_argument(err.to_string())),
         };
 
         let (mut samples, spec) = stego
@@ -92,7 +92,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
 
         let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
-            Err(err) => return Err(Status::invalid_argument(err)),
+            Err(err) => return Err(Status::invalid_argument(err.to_string())),
         };
 
         let (samples, _spec) = stego
@@ -128,7 +128,7 @@ impl StegoWaveService for StegoWaveServiceImpl {
 
         let stego = match get_stego_by_str(&format, lsb_deep as _, (*self.settings).clone()) {
             Ok(stego) => stego,
-            Err(err) => return Err(Status::invalid_argument(err)),
+            Err(err) => return Err(Status::invalid_argument(err.to_string())),
         };
 
         let (mut samples, spec) = stego

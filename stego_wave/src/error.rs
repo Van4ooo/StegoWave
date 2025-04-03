@@ -53,3 +53,12 @@ impl StegoWaveClientError {
         }
     }
 }
+
+#[derive(Debug, Error)]
+pub enum GetStegoError {
+    #[error("No steganography algorithm found for this format")]
+    StegoNotFoundError,
+
+    #[error("Error building stego algorithm: {0}")]
+    BuildStegoError(String),
+}
