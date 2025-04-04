@@ -40,6 +40,14 @@ impl Cli {
             Commands::Clear(clear) => &clear.command.config,
         }
     }
+
+    pub fn get_input_file_path(&self) -> &Option<PathBuf> {
+        match self.get_command() {
+            Commands::Hide(hide) => &hide.command.input_file,
+            Commands::Extract(extract) => &extract.command.input_file,
+            Commands::Clear(clear) => &clear.command.input_file,
+        }
+    }
 }
 
 #[derive(Debug, Subcommand)]

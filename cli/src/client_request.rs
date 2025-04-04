@@ -20,12 +20,13 @@ const QUERY_ATTEMPTS: u8 = 2;
 
 pub async fn client_request(cli: Cli, settings: Settings) -> Result<()> {
     let password = read_user_password()?;
+    let file_bytes = get_input_file(cli.get_input_file_path()).await?;
 
-    match query_attempt(&cli, &settings, &password).await {
+    match query_attempt(&cli, &settings, &password, &file_bytes).await {
         Ok(()) => Ok(()),
         Err(err) if err.to_string() == "Connection failed" => {
             run_server(&cli, &settings).await?;
-            query_attempt_with_sleep(&cli, &settings, &password, QUERY_ATTEMPTS).await
+            query_attempt_with_sleep(&cli, &settings, &password, &file_bytes, QUERY_ATTEMPTS).await
         }
         Err(err) => Err(err),
     }
@@ -35,10 +36,11 @@ pub async fn query_attempt_with_sleep(
     cli: &Cli,
     settings: &Settings,
     password: &str,
+    file_bytes: &[u8],
     attempt: u8,
 ) -> Result<()> {
     for _ in 0..attempt {
-        match query_attempt(cli, settings, password).await {
+        match query_attempt(cli, settings, password, file_bytes).await {
             Ok(()) => return Ok(()),
             Err(err) if err.to_string() == "Connection failed" => {
                 sleep(Duration::from_secs(2)).await;
@@ -49,11 +51,18 @@ pub async fn query_attempt_with_sleep(
     Ok(())
 }
 
-pub async fn query_attempt(cli: &Cli, settings: &Settings, password: &str) -> Result<()> {
+pub async fn query_attempt(
+    cli: &Cli,
+    settings: &Settings,
+    password: &str,
+    file_bytes: &[u8],
+) -> Result<()> {
     match cli.get_command() {
-        Commands::Hide(hide) => hide_command(hide, settings, password).await,
-        Commands::Extract(extract) => extract_command(extract, settings, password).await,
-        Commands::Clear(clear) => clear_command(clear, settings, password).await,
+        Commands::Hide(hide) => hide_command(hide, settings, password, file_bytes).await,
+        Commands::Extract(extract) => {
+            extract_command(extract, settings, password, file_bytes).await
+        }
+        Commands::Clear(clear) => clear_command(clear, settings, password, file_bytes).await,
     }
 }
 
@@ -92,16 +101,19 @@ pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
     Ok(())
 }
 
-async fn hide_command(hide: &HideCommand, settings: &Settings, password: &str) -> Result<()> {
+async fn hide_command(
+    hide: &HideCommand,
+    settings: &Settings,
+    password: &str,
+    file_bytes: &[u8],
+) -> Result<()> {
     let mut client = get_client(&hide.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
-    let file_byte = get_input_file(&hide.command.input_file).await?;
-
     let result: Vec<u8> = client
         .hide_message(
-            file_byte,
+            file_bytes.to_vec(),
             hide.message.clone(),
             password.to_string(),
             hide.command.format.clone().into(),
@@ -118,16 +130,15 @@ async fn extract_command(
     extract: &ExtractCommand,
     settings: &Settings,
     password: &str,
+    file_bytes: &[u8],
 ) -> Result<()> {
     let mut client = get_client(&extract.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
-    let file_byte = get_input_file(&extract.command.input_file).await?;
-
     let result: String = client
         .extract_message(
-            file_byte,
+            file_bytes.to_vec(),
             password.to_string(),
             extract.command.format.clone().into(),
             extract.command.lsb_deep,
@@ -138,16 +149,19 @@ async fn extract_command(
     Ok(())
 }
 
-async fn clear_command(clear: &ClearCommand, settings: &Settings, password: &str) -> Result<()> {
+async fn clear_command(
+    clear: &ClearCommand,
+    settings: &Settings,
+    password: &str,
+    file_bytes: &[u8],
+) -> Result<()> {
     let mut client = get_client(&clear.command.server, settings)
         .await
         .map_err(stego_client_wrap_error)?;
 
-    let file_byte = get_input_file(&clear.command.input_file).await?;
-
     let result: Vec<u8> = client
         .clear_message(
-            file_byte,
+            file_bytes.to_vec(),
             password.to_string(),
             clear.command.format.clone().into(),
             clear.command.lsb_deep,
