@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 #[derive(Deserialize, ToSchema)]
 pub struct HideRequest {
     #[schema(value_type = String, format = "binary")]
-    pub file: String,
+    pub file: Vec<u8>,
     #[schema(example = "Secret message")]
     pub message: String,
     #[schema(example = "qwerty1234")]
@@ -20,7 +20,7 @@ pub struct HideRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct ExtractRequest {
     #[schema(value_type = String, format = "binary")]
-    pub file: String,
+    pub file: Vec<u8>,
     #[schema(example = "qwerty1234")]
     pub password: String,
     #[schema(example = "wav16")]
@@ -33,7 +33,7 @@ pub struct ExtractRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct ClearRequest {
     #[schema(value_type = String, format = "binary")]
-    pub file: String,
+    pub file: Vec<u8>,
     #[schema(example = "qwerty1234")]
     pub password: String,
     #[schema(example = "wav16")]

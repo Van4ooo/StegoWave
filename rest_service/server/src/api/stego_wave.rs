@@ -26,18 +26,13 @@ macro_rules! audio_response_from_samples {
     }};
 }
 
-macro_rules! get_required_field {
-    ($payload:expr, $file_bytes:expr, $message:expr, $password:expr, $format:expr) => {{
-        let mut multipart = match parse_multipart_payload($payload).await {
+macro_rules! parse_form {
+    ($payload:expr) => {
+        match parse_multipart_payload($payload).await {
             Ok(data) => data,
-            Err(e) => return HttpResponse::InternalServerError().body(e),
-        };
-
-        match multipart.get_required_field($file_bytes, $message, $password, $format) {
-            Ok(data) => data,
-            Err(err) => return HttpResponse::BadRequest().body(err),
+            Err(err) => return HttpResponse::InternalServerError().body(err),
         }
-    }};
+    };
 }
 
 macro_rules! get_stego {
@@ -65,17 +60,22 @@ macro_rules! get_stego {
 )]
 #[post("/api/hide_message")]
 pub async fn hide_message(payload: Multipart, settings: web::Data<StegoWaveLib>) -> impl Responder {
-    let (file_bytes, message, password, format, lsb_deep) =
-        get_required_field!(payload, true, true, true, true);
+    let multipart = parse_form!(payload);
+    let hide_request: HideRequest = match multipart.try_into() {
+        Ok(req) => req,
+        Err(err) => return HttpResponse::BadRequest().body(err),
+    };
 
-    let stego = get_stego!(format, lsb_deep, settings);
+    let stego = get_stego!(hide_request.format, hide_request.lsb_deep, settings);
 
-    let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
+    let (mut samples, spec) = match stego.read_samples_from_byte(hide_request.file) {
         Ok(data) => data,
         Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
-    if let Err(err) = stego.hide_message_binary(&mut samples, &message, &password) {
+    if let Err(err) =
+        stego.hide_message_binary(&mut samples, hide_request.message, hide_request.password)
+    {
         return HttpResponse::InternalServerError().body(err.to_string());
     }
 
@@ -101,17 +101,20 @@ pub async fn extract_message(
     payload: Multipart,
     settings: web::Data<StegoWaveLib>,
 ) -> impl Responder {
-    let (file_bytes, _, password, format, lsb_deep) =
-        get_required_field!(payload, true, false, true, true);
+    let multipart = parse_form!(payload);
+    let extract_request: ExtractRequest = match multipart.try_into() {
+        Ok(req) => req,
+        Err(err) => return HttpResponse::BadRequest().body(err),
+    };
 
-    let stego = get_stego!(format, lsb_deep, settings);
+    let stego = get_stego!(extract_request.format, extract_request.lsb_deep, settings);
 
-    let (samples, _) = match stego.read_samples_from_byte(file_bytes) {
+    let (samples, _) = match stego.read_samples_from_byte(extract_request.file) {
         Ok(data) => data,
         Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
-    match stego.extract_message_binary(&samples, &password) {
+    match stego.extract_message_binary(&samples, extract_request.password) {
         Ok(msg) => HttpResponse::Ok().body(msg),
         Err(StegoError::IncorrectPassword) => {
             HttpResponse::BadRequest().body(StegoError::IncorrectPassword.to_string())
@@ -139,17 +142,20 @@ pub async fn clear_message(
     payload: Multipart,
     settings: web::Data<StegoWaveLib>,
 ) -> impl Responder {
-    let (file_bytes, _, password, format, lsb_deep) =
-        get_required_field!(payload, true, false, true, true);
+    let multipart = parse_form!(payload);
+    let clear_request: ClearRequest = match multipart.try_into() {
+        Ok(req) => req,
+        Err(err) => return HttpResponse::BadRequest().body(err),
+    };
 
-    let stego = get_stego!(format, lsb_deep, settings);
+    let stego = get_stego!(clear_request.format, clear_request.lsb_deep, settings);
 
-    let (mut samples, spec) = match stego.read_samples_from_byte(file_bytes) {
+    let (mut samples, spec) = match stego.read_samples_from_byte(clear_request.file) {
         Ok(data) => data,
         Err(err) => return HttpResponse::InternalServerError().body(err.to_string()),
     };
 
-    match stego.clear_secret_message_binary(&mut samples, &password) {
+    match stego.clear_secret_message_binary(&mut samples, clear_request.password) {
         Ok(()) => {}
         Err(StegoError::IncorrectPassword) => {
             return HttpResponse::BadRequest().body(StegoError::IncorrectPassword.to_string());

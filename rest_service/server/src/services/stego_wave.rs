@@ -1,3 +1,4 @@
+use crate::models::request_object::{ClearRequest, ExtractRequest, HideRequest};
 use actix_multipart::{Field, Multipart};
 use futures::{StreamExt, TryStreamExt};
 use std::error::Error;
@@ -13,35 +14,83 @@ pub struct MultipartyPayload {
     pub lsb_deep: Option<u8>,
 }
 
-impl MultipartyPayload {
-    pub fn get_required_field(
-        &mut self,
-        file_bytes: bool,
-        message: bool,
-        password: bool,
-        format: bool,
-    ) -> Result<(Vec<u8>, String, String, String, u8), String> {
-        if file_bytes && self.file_bytes.is_none() {
-            return Err("The |file body| field is required".to_string());
-        }
-        if message && self.message.is_none() {
-            return Err("The |message| field is required".to_string());
-        }
-        if password && self.password.is_none() {
-            return Err("The |password| field is required".to_string());
-        }
-        if format && self.format.is_none() {
-            return Err("The |format| field is required".to_string());
-        }
+impl TryFrom<MultipartyPayload> for HideRequest {
+    type Error = String;
 
-        let payload = mem::take(self);
-        Ok((
-            payload.file_bytes.unwrap_or_default(),
-            payload.message.unwrap_or_default(),
-            payload.password.unwrap_or_default(),
-            payload.format.unwrap_or_default(),
-            payload.lsb_deep.unwrap_or(1),
-        ))
+    fn try_from(mut value: MultipartyPayload) -> Result<Self, Self::Error> {
+        Ok(HideRequest {
+            file: value.get_file_bytes()?,
+            message: value.get_message()?,
+            password: value.get_password()?,
+            format: value.get_format()?,
+            lsb_deep: value.get_lsb_deep()?,
+        })
+    }
+}
+
+impl TryFrom<MultipartyPayload> for ExtractRequest {
+    type Error = String;
+    fn try_from(mut value: MultipartyPayload) -> Result<Self, Self::Error> {
+        Ok(ExtractRequest {
+            file: value.get_file_bytes()?,
+            password: value.get_password()?,
+            format: value.get_format()?,
+            lsb_deep: value.get_lsb_deep()?,
+        })
+    }
+}
+
+impl TryFrom<MultipartyPayload> for ClearRequest {
+    type Error = String;
+    fn try_from(mut value: MultipartyPayload) -> Result<Self, Self::Error> {
+        Ok(ClearRequest {
+            file: value.get_file_bytes()?,
+            password: value.get_password()?,
+            format: value.get_format()?,
+            lsb_deep: value.get_lsb_deep()?,
+        })
+    }
+}
+
+impl MultipartyPayload {
+    pub fn get_file_bytes(&mut self) -> Result<Vec<u8>, String> {
+        if let Some(file) = mem::take(&mut self.file_bytes) {
+            Ok(file)
+        } else {
+            Err("The |file bytes| field is required".to_string())
+        }
+    }
+
+    pub fn get_message(&mut self) -> Result<String, String> {
+        if let Some(message) = mem::take(&mut self.message) {
+            Ok(message)
+        } else {
+            Err("The |message| field is required".to_string())
+        }
+    }
+
+    pub fn get_password(&mut self) -> Result<String, String> {
+        if let Some(password) = mem::take(&mut self.password) {
+            Ok(password)
+        } else {
+            Err("The |password| field is required".to_string())
+        }
+    }
+
+    pub fn get_format(&mut self) -> Result<String, String> {
+        if let Some(format) = mem::take(&mut self.format) {
+            Ok(format)
+        } else {
+            Err("The |format| field is required".to_string())
+        }
+    }
+
+    pub fn get_lsb_deep(&mut self) -> Result<u8, String> {
+        if let Some(lsb_deep) = mem::take(&mut self.lsb_deep) {
+            Ok(lsb_deep)
+        } else {
+            Err("The |lsb_deep| field is required".to_string())
+        }
     }
 }
 
