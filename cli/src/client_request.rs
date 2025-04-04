@@ -10,19 +10,40 @@ use std::io::{Write, stderr};
 use std::net::SocketAddr;
 use std::net::TcpListener;
 use std::path::PathBuf;
+use std::time::Duration;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::time::sleep;
+
+const QUERY_ATTEMPTS: u8 = 2;
 
 pub async fn client_request(cli: Cli, settings: Settings) -> Result<()> {
     let password = read_user_password()?;
 
-    if let Err(err) = query_attempt(&cli, &settings, &password).await {
-        if err.to_string() == "Connection failed" {
+    match query_attempt(&cli, &settings, &password).await {
+        Ok(()) => Ok(()),
+        Err(err) if err.to_string() == "Connection failed" => {
             run_server(&cli, &settings).await?;
-            query_attempt(&cli, &settings, &password).await?;
-        } else {
-            return Err(err);
+            query_attempt_with_sleep(&cli, &settings, &password, QUERY_ATTEMPTS).await
+        }
+        Err(err) => Err(err),
+    }
+}
+
+pub async fn query_attempt_with_sleep(
+    cli: &Cli,
+    settings: &Settings,
+    password: &str,
+    attempt: u8,
+) -> Result<()> {
+    for _ in 0..attempt {
+        match query_attempt(cli, settings, password).await {
+            Ok(()) => return Ok(()),
+            Err(err) if err.to_string() == "Connection failed" => {
+                sleep(Duration::from_secs(2)).await;
+            }
+            Err(err) => return Err(err),
         }
     }
     Ok(())
