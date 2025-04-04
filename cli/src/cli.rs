@@ -1,3 +1,4 @@
+use crate::CONFIG_FILE;
 use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 
@@ -30,6 +31,13 @@ impl Cli {
             Commands::Hide(hide) => hide.command.start_server,
             Commands::Extract(extract) => extract.command.start_server,
             Commands::Clear(clear) => clear.command.start_server,
+        }
+    }
+    pub fn get_file_config(&self) -> &str {
+        match self.get_command() {
+            Commands::Hide(hide) => &hide.command.config,
+            Commands::Extract(extract) => &extract.command.config,
+            Commands::Clear(clear) => &clear.command.config,
         }
     }
 }
@@ -104,6 +112,14 @@ pub struct CommonFields {
         default_value_t = 1
     )]
     pub lsb_deep: u8,
+
+    #[arg(
+        long = "config",
+        help = "Specify the path to the configuration file",
+        env = "SW_CONFIG",
+        default_value = CONFIG_FILE,
+    )]
+    pub config: String,
 }
 
 #[derive(Debug, Parser)]

@@ -10,7 +10,3 @@ port = 50051
 header = "STEG"
 default_lsb_deep = 1
 max_occupancy = 70
-
-[sw]
-hide_file_prefix = "sw_"
-clear_file_prefix = "c"
