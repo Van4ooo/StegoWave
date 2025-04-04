@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package stego_wave;
+
+message HideRequest {
+    bytes file = 1;
+    string message = 2;
+    string password = 3;
+    string format = 4;
+    uint32 lsb_deep = 5;
+}
+
+message ExtractRequest {
+    bytes file = 1;
+    string password = 3;
+    string format = 4;
+    uint32 lsb_deep = 5;
+}
+
+message ClearRequest {
+    bytes file = 1;
+    string password = 3;
+    string format = 4;
+    uint32 lsb_deep = 5;
+}
+
+message AudioResponse {
+    bytes file = 1;
+}
+
+message MessageResponse {
+    string message = 1;
+}
+
+service StegoWaveService {
+    rpc HideMessage(HideRequest) returns (AudioResponse);
+    rpc ExtractMessage(ExtractRequest) returns (MessageResponse);
+    rpc ClearMessage(ClearRequest) returns (AudioResponse);
+}
