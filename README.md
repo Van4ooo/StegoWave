@@ -93,7 +93,8 @@ cargo build --release --bin sw
 ./target/release/sw --help
 ```
 
-![image](https://github.com/user-attachments/assets/b339c43c-83f2-4d6e-8ffe-4aff3cd4f41a)
+![image](https://github.com/user-attachments/assets/7b1a63d2-bde8-4e6c-bac9-bde9ab9cbd52)
+
 
 
 ### Usage ```sw```
@@ -107,18 +108,17 @@ Use the ```hide``` command to embed a secret message into an audio file.
 ./target/release/sw hide --help
 ```
 
-![image](https://github.com/user-attachments/assets/67bb8fc5-d043-478c-b76c-fc9e6e70feab)
+![image](https://github.com/user-attachments/assets/3b23d673-98cd-4801-bed3-1a1cda881764)
 
-Command Syntax
-```shell
-./target/release/sw  hide --password "qwerty1234" --message "Super secret message!!!" --file_name <FILE_NAME> --format wav16
-./target/release/sw  hide --server auto --lsb_deep 1  --password "qwerty1234" --message "Super secret message!!!" --file_name <FILE_NAME> --format wav16 
-```
 
-- hide successfully
-![image](https://github.com/user-attachments/assets/dfe49f8a-6888-4f34-ac60-1830462e88d6)
-- hide failed (servers unavailable)
-![image](https://github.com/user-attachments/assets/4d46b722-5123-42fe-be34-4203fa4bf570)
+- #### Windows command syntax
+    ```shell
+    ./target/release/sw hide --input_file <FILE_NAME> --output_file <FILE_NAME> --message "Super secret message!!" --format wav16
+    ``` 
+- #### Linux command syntax
+    ```shell
+    cat <FILE_NAME> | sw hide --message "Super secret message!!" --format wav16 > <FILE_NAME>
+    ```
 
 
 ### Extracting a secret message
@@ -128,19 +128,17 @@ Use the ```extract``` command to retrieve a hidden message from an audio file.
 ./target/release/sw extract --help
 ```
 
-![image](https://github.com/user-attachments/assets/55529cb8-f33d-4ef6-aa26-1c8d7c7e547b)
-
-Command Syntax
-```shell
-./target/release/sw extract --password "qwerty1234" --file_name <FILE_NAME> --format wav16 --server auto --lsb_deep 1
-```
-
-- extract successfully
-![image](https://github.com/user-attachments/assets/5067e437-40f2-44d9-b77a-59e4227169ad)
-- extract failed(password is incorrect)
-![image](https://github.com/user-attachments/assets/eee9e1c4-b66d-4a50-937e-e892f6de6156)
+![image](https://github.com/user-attachments/assets/f7b51cd4-7fe4-4fb1-9906-a28c83b9ffdd)
 
 
+- #### Windows command syntax
+    ```shell
+    sw extract --input_file <FILE_NAME> --format wav16
+    ``` 
+- #### Linux command syntax
+    ```shell
+    cat <FILE_NAME> | sw extract  --format wav16 > rez.txt
+    ```
 
 
 ### Clearing a hidden message
@@ -150,13 +148,22 @@ The ```clear``` command removes the hidden message from an audio file.
 ./target/release/sw clear --help 
 ```
 
-![image](https://github.com/user-attachments/assets/fc17c4d6-df5f-4bc5-9f1f-063a38642f77)
+![image](https://github.com/user-attachments/assets/6d135f83-5499-4f8a-9c3b-ae13cf980886)
 
-Command Syntax
+- #### Windows command syntax
+    ```shell
+    sw clear --input_file <FILE_NAME> --output_file <FILE_NAME> --format wav16
+    ``` 
+- #### Linux command syntax
+    ```shell
+    cat <FILE_NAME> | sw clear --format wav16 > <FILE_NAME>
+    ```
+
+### Automatically start the server if it's not running
 ```shell
-./target/release/sw  extract --password "qwerty1234" --file_name sw_bird.wav --format wav16 --server auto --lsb_deep 1
+sw <COMMAND> --start-server --server grpc
+sw <COMMAND> --start-server --server rest
 ```
-
 --- 
 This tutorial should help you understand and use the ```sw``` application for embedding, extracting,
 and clearing hidden messages within audio files. Happy steganography!
