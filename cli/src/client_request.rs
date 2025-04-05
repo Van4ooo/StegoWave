@@ -20,7 +20,7 @@ const QUERY_ATTEMPTS: u8 = 2;
 
 pub async fn client_request(cli: Cli, settings: Settings) -> Result<()> {
     let password = read_user_password()?;
-    let file_bytes = get_input_file(cli.get_input_file_path()).await?;
+    let file_bytes = get_input_file(cli.input_file()).await?;
 
     match query_attempt(&cli, &settings, &password, &file_bytes).await {
         Ok(()) => Ok(()),
@@ -57,7 +57,7 @@ pub async fn query_attempt(
     password: &str,
     file_bytes: &[u8],
 ) -> Result<()> {
-    match cli.get_command() {
+    match cli.command() {
         Commands::Hide(hide) => hide_command(hide, settings, password, file_bytes).await,
         Commands::Extract(extract) => {
             extract_command(extract, settings, password, file_bytes).await
@@ -67,12 +67,12 @@ pub async fn query_attempt(
 }
 
 pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
-    if !cli.get_start_server() {
+    if !cli.start_server() {
         return Err(eyre!("Failed to connect to the servers.")
             .suggestion("Try using the '--start-server' flag and the program will start the server automatically"));
     }
 
-    match cli.get_server() {
+    match cli.server() {
         StegoWaveServer::Auto => {
             return Err(
                 eyre!("Automatic server selection is not supported.").suggestion(

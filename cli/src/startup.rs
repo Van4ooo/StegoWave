@@ -9,9 +9,9 @@ pub async fn run() -> color_eyre::Result<()> {
         .install()?;
 
     let cli_args = cli::Cli::parse();
-    let settings = Settings::new(cli_args.get_file_config()).suggestion(format!(
+    let settings = Settings::new(cli_args.config()).suggestion(format!(
         "Please create configuration file {}",
-        cli_args.get_file_config()
+        cli_args.config()
     ))?;
 
     client_request::client_request(cli_args, settings).await

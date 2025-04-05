@@ -15,34 +15,34 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn get_command(&self) -> &Commands {
+    pub fn command(&self) -> &Commands {
         &self.commands
     }
-    pub fn get_server(&self) -> StegoWaveServer {
-        match self.get_command() {
+    pub fn server(&self) -> StegoWaveServer {
+        match self.command() {
             Commands::Hide(hide) => hide.command.server.clone(),
             Commands::Extract(extract) => extract.command.server.clone(),
             Commands::Clear(clear) => clear.command.server.clone(),
         }
     }
 
-    pub fn get_start_server(&self) -> bool {
-        match self.get_command() {
+    pub fn start_server(&self) -> bool {
+        match self.command() {
             Commands::Hide(hide) => hide.command.start_server,
             Commands::Extract(extract) => extract.command.start_server,
             Commands::Clear(clear) => clear.command.start_server,
         }
     }
-    pub fn get_file_config(&self) -> &str {
-        match self.get_command() {
+    pub fn config(&self) -> &str {
+        match self.command() {
             Commands::Hide(hide) => &hide.command.config,
             Commands::Extract(extract) => &extract.command.config,
             Commands::Clear(clear) => &clear.command.config,
         }
     }
 
-    pub fn get_input_file_path(&self) -> &Option<PathBuf> {
-        match self.get_command() {
+    pub fn input_file(&self) -> &Option<PathBuf> {
+        match self.command() {
             Commands::Hide(hide) => &hide.command.input_file,
             Commands::Extract(extract) => &extract.command.input_file,
             Commands::Clear(clear) => &clear.command.input_file,
