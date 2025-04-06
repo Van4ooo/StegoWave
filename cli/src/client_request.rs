@@ -9,7 +9,7 @@ use std::io;
 use std::io::{Write, stderr};
 use std::net::SocketAddr;
 use std::net::TcpListener;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
@@ -20,7 +20,7 @@ const QUERY_ATTEMPTS: u8 = 2;
 
 pub async fn client_request(cli: Cli, settings: Settings) -> Result<()> {
     let password = read_user_password()?;
-    let file_bytes = get_input_file(cli.input_file()).await?;
+    let file_bytes = get_input_file(cli.input_file().as_ref()).await?;
 
     match query_attempt(&cli, &settings, &password, &file_bytes).await {
         Ok(()) => Ok(()),
@@ -218,7 +218,7 @@ fn read_user_password() -> Result<String, io::Error> {
     Ok(password)
 }
 
-async fn get_input_file(input_file: &Option<PathBuf>) -> Result<Vec<u8>> {
+async fn get_input_file(input_file: Option<&impl AsRef<Path>>) -> Result<Vec<u8>> {
     if let Some(file_name) = input_file {
         tokio::fs::read(file_name).await.suggestion(
             "Please either specify the --input_file option or pipe the audio file as input.",
