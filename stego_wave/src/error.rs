@@ -29,8 +29,8 @@ pub enum StegoWaveClientError {
     #[error("Request failed")]
     RequestFailed,
 
-    #[error("Invalid server URL")]
-    UlrInvalid,
+    #[error("Invalid server URL :: {0}")]
+    UlrInvalid(String),
 
     #[error("{0}")]
     Response(String),
@@ -46,7 +46,7 @@ impl StegoWaveClientError {
                 "Verify that the request parameters are correct and the server is available."
                     .to_string(),
             ),
-            StegoWaveClientError::UlrInvalid => {
+            StegoWaveClientError::UlrInvalid(_) => {
                 Some("Check that the URL is in the correct format and reachable.".to_string())
             }
             StegoWaveClientError::Response(_) => None,

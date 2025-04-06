@@ -2,6 +2,8 @@ use grpc_server::configuration::GrpcConfig;
 use rest_server::configuration::RestConfig;
 use serde::Deserialize;
 use stego_wave::configuration::StegoWaveLib;
+use stego_wave::error::StegoWaveClientError;
+use url::Url;
 
 #[derive(Deserialize)]
 pub struct Settings {
@@ -20,19 +22,13 @@ impl Settings {
         conf.try_deserialize()
     }
 
-    pub fn grpc_address(&self) -> String {
-        format!("http://{}:{}", self.grpc.host, self.grpc.port)
+    pub fn grpc_address(&self) -> Result<Url, StegoWaveClientError> {
+        Url::parse(&format!("http://{}:{}", self.grpc.host, self.grpc.port))
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))
     }
 
-    pub fn grpc_server_address(&self) -> String {
-        format!("{}:{}", self.grpc.host, self.grpc.port)
-    }
-
-    pub fn rest_address(&self) -> String {
-        format!("http://{}:{}", self.rest.host, self.rest.port)
-    }
-
-    pub fn rest_server_address(&self) -> String {
-        format!("{}:{}", self.rest.host, self.rest.port)
+    pub fn rest_address(&self) -> Result<Url, StegoWaveClientError> {
+        Url::parse(&format!("http://{}:{}", self.rest.host, self.rest.port))
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))
     }
 }

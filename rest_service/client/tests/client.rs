@@ -110,12 +110,12 @@ async fn test_rest_client() -> Result<(), Box<dyn Error>> {
     let listener = TcpListener::bind(format!("{}:0", &settings.rest.host))
         .expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port().clone();
-    let addrs = format!("http://{}:{}", settings.rest.host, port);
+    let addrs = url::Url::parse(&format!("http://{}:{}", settings.rest.host, port))?;
 
     let server = run_server(listener, stego_wave_setting).expect("Failed to bind address");
     let _ = tokio::spawn(server);
 
-    let client = StegoWaveRestClient::new(addrs.as_str()).await?;
+    let client = StegoWaveRestClient::new(addrs).await?;
     full_test_client(client, "rest.wav").await?;
     Ok(())
 }

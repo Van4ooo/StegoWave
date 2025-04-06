@@ -81,7 +81,7 @@ pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
             );
         }
         StegoWaveServer::GRPC => {
-            let addr: SocketAddr = settings.grpc_server_address().parse()?;
+            let addr: SocketAddr = settings.grpc_address()?.authority().parse()?;
 
             drop(tokio::spawn(grpc_server::startup::run_server(
                 addr,
@@ -89,7 +89,7 @@ pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
             )));
         }
         StegoWaveServer::REST => {
-            let listener: TcpListener = TcpListener::bind(settings.rest_server_address())?;
+            let listener: TcpListener = TcpListener::bind(settings.rest_address()?.authority())?;
 
             let server =
                 rest_server::startup::run_server(listener, settings.stego_wave_lib.clone())?;
@@ -184,24 +184,26 @@ async fn get_client(
     server: &StegoWaveServer,
     settings: &Settings,
 ) -> Result<Box<dyn StegoWaveClient>, StegoWaveClientError> {
-    let grpc_address = settings.grpc_address();
-    let rest_address = settings.rest_address();
+    let grpc_address = settings.grpc_address()?;
+    let rest_address = settings.rest_address()?;
 
     match server {
         StegoWaveServer::Auto => {
-            if let Ok(client) = grpc_client::StegoWaveGrpcClient::new(grpc_address.as_str()).await {
+            if let Ok(client) =
+                grpc_client::StegoWaveGrpcClient::new(grpc_address.to_string()).await
+            {
                 Ok(Box::new(client))
             } else {
-                let client = rest_client::StegoWaveRestClient::new(rest_address.as_str()).await?;
+                let client = rest_client::StegoWaveRestClient::new(rest_address).await?;
                 Ok(Box::new(client))
             }
         }
         StegoWaveServer::GRPC => {
-            let client = grpc_client::StegoWaveGrpcClient::new(grpc_address.as_str()).await?;
+            let client = grpc_client::StegoWaveGrpcClient::new(grpc_address.to_string()).await?;
             Ok(Box::new(client))
         }
         StegoWaveServer::REST => {
-            let client = rest_client::StegoWaveRestClient::new(rest_address.as_str()).await?;
+            let client = rest_client::StegoWaveRestClient::new(rest_address).await?;
             Ok(Box::new(client))
         }
     }

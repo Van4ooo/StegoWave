@@ -9,6 +9,7 @@ clap = { version = "4.5.26", features = ["derive", "env"]}
 color-eyre = { version = "0.6.3",  default-features = false}
 colored = "3.0.0"
 rpassword = "7.3.1"
+url = "2.5.4"
 tokio = { workspace = true}
 hound = { workspace = true }
 serde = { workspace = true }

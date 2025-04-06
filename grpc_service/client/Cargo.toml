@@ -9,7 +9,6 @@ license.workspace = true
 path = "src/lib.rs"
 
 [dependencies]
-url = "2.5.4"
 tokio-stream = "0.1.17"
 async-trait = { workspace = true }
 tonic = { workspace = true }

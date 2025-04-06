@@ -2,8 +2,8 @@ use crate::stego_wave_grpc::stego_wave_service_client::StegoWaveServiceClient;
 use crate::stego_wave_grpc::{ClearRequest, ExtractRequest, HideRequest};
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
+use tonic::codegen::Bytes;
 use tonic::transport::Channel;
-use url::Url;
 
 const MAX_MESSAGE_SIZE: usize = 100 * 1024 * 1024;
 
@@ -13,20 +13,12 @@ pub struct StegoWaveGrpcClient {
 }
 
 impl StegoWaveGrpcClient {
-    pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
-        let grpc_url = url
-            .try_into()
-            .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
-
-        let channel = Channel::builder(
-            grpc_url
-                .as_str()
-                .parse()
-                .map_err(|_err| StegoWaveClientError::UlrInvalid)?,
-        )
-        .connect()
-        .await
-        .map_err(|_err| StegoWaveClientError::ConnectionFailed)?;
+    pub async fn new(url: impl Into<Bytes> + Send) -> Result<Self, StegoWaveClientError> {
+        let channel = Channel::from_shared(url)
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))?
+            .connect()
+            .await
+            .map_err(|_err| StegoWaveClientError::ConnectionFailed)?;
 
         let client = StegoWaveServiceClient::new(channel)
             .max_decoding_message_size(MAX_MESSAGE_SIZE)

@@ -20,13 +20,9 @@ pub struct StegoWaveRestClient {
 }
 
 impl StegoWaveRestClient {
-    pub async fn new(url: impl TryInto<Url> + Send) -> Result<Self, StegoWaveClientError> {
-        let rest_url = url
-            .try_into()
-            .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
-
+    pub async fn new(url: impl Into<Url> + Send) -> Result<Self, StegoWaveClientError> {
         Ok(Self {
-            rest_url,
+            rest_url: url.into(),
             client: Client::new(),
         })
     }
@@ -52,7 +48,7 @@ impl StegoWaveClient for StegoWaveRestClient {
         let url = self
             .rest_url
             .join("api/hide_message")
-            .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))?;
 
         let response = self
             .client
@@ -87,7 +83,7 @@ impl StegoWaveClient for StegoWaveRestClient {
         let url = self
             .rest_url
             .join("api/extract_message")
-            .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))?;
         let response = self
             .client
             .post(url)
@@ -121,7 +117,7 @@ impl StegoWaveClient for StegoWaveRestClient {
         let url = self
             .rest_url
             .join("api/clear_message")
-            .map_err(|_err| StegoWaveClientError::UlrInvalid)?;
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))?;
         let response = self
             .client
             .post(url)

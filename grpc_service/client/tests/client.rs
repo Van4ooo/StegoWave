@@ -109,7 +109,7 @@ async fn test_grpc_client() -> Result<(), Box<dyn Error>> {
     let _ = tokio::spawn(run_server(addr.clone(), settings.stego_wave_lib));
 
     let addrs = format!("http://{}", addr);
-    let client = StegoWaveGrpcClient::new(addrs.as_str()).await?;
+    let client = StegoWaveGrpcClient::new(addrs).await?;
     full_test_client(client, "grpc.wav").await?;
     Ok(())
 }
