@@ -1,0 +1,25 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+clap = { version = "4.5.26", features = ["derive", "env"]}
+color-eyre = { version = "0.6.3",  default-features = false}
+colored = "3.0.0"
+rpassword = "7.3.1"
+url = "2.5.4"
+tokio = { workspace = true}
+hound = { workspace = true }
+serde = { workspace = true }
+config = { workspace = true }
+stego_wave = { workspace = true}
+rest_client = { workspace = true }
+grpc_client = { workspace = true }
+grpc_server = { workspace = true }
+rest_server = { workspace = true }
+
+[[bin]]
+name = "sw"
+path = "src/main.rs"

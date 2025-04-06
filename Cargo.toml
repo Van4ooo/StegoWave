@@ -1,6 +1,33 @@
-[package]
-name = "StegoWave"
-version = "0.1.0"
+[workspace.package]
+version = "0.0.1"
+authors = ["Ivan Rybachyk <ivan2005rubachyk@gmail.com>"]
 edition = "2024"
+license = "Apache-2.0"
+license-file = "./LICENSE"
+description = "Service for audio file steganography with gRPC and REST architecture writen on Rust 🦀"
 
-[dependencies]
+[workspace]
+resolver = "2"
+members = [
+    "rest_service/client",
+    "rest_service/server",
+    "grpc_service/client",
+    "grpc_service/server",
+    "stego_wave",
+    "cli",
+]
+
+[workspace.dependencies]
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
+serde = { version = "1.0.217", features = ["derive"] }
+config = "0.15.5"
+hound = "3.5.1"
+tonic = "0.12.3"
+tonic-build = "0.12.3"
+prost = "0.13.4"
+async-trait = "0.1.85"
+stego_wave = { path = "stego_wave" }
+rest_client = { path = "rest_service/client" }
+rest_server = { path = "rest_service/server" }
+grpc_client = { path = "grpc_service/client" }
+grpc_server = { path = "grpc_service/server" }
