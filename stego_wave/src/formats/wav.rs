@@ -6,7 +6,7 @@ use crate::object::{
 use derive_builder::Builder;
 use std::io::Cursor;
 use std::iter;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// A steganography encoder/decoder for 16-bit WAV audio files.
 ///
@@ -141,21 +141,18 @@ impl AudioSteganography<i16> for WAV16 {
     /// See test_hide_and_extract_message() test for usage example.
     fn hide_message(
         &self,
-        file_input: impl Into<PathBuf>,
-        file_output: impl Into<PathBuf>,
+        file_input: impl AsRef<Path>,
+        file_output: impl AsRef<Path>,
         message: impl AsRef<str>,
         password: impl AsRef<str>,
     ) -> ResultStego<()> {
-        let input_path = file_input.into();
-        let output_path = file_output.into();
-
-        self.validate_file(&input_path)?;
-        let mut reader = hound::WavReader::open(&input_path)?;
+        self.validate_file(&file_input)?;
+        let mut reader = hound::WavReader::open(file_input)?;
         let mut samples = Self::read_sample(&mut reader)?;
 
         self.hide_message_binary(&mut samples, message, password)?;
 
-        let mut writer = hound::WavWriter::create(output_path, reader.spec())?;
+        let mut writer = hound::WavWriter::create(file_output, reader.spec())?;
         for sample in samples {
             writer.write_sample(sample)?;
         }
@@ -237,13 +234,12 @@ impl AudioSteganography<i16> for WAV16 {
     /// See test_hide_and_extract_message() test for usage example.
     fn extract_message(
         &self,
-        file: impl Into<PathBuf>,
+        file: impl AsRef<Path>,
         password: impl AsRef<str>,
     ) -> ResultStego<String> {
-        let input_path = file.into();
-        self.validate_file(&input_path)?;
+        self.validate_file(&file)?;
 
-        let mut reader = hound::WavReader::open(&input_path)?;
+        let mut reader = hound::WavReader::open(file)?;
         let samples = Self::read_sample(&mut reader)?;
 
         self.extract_message_binary(&samples, password)
@@ -313,18 +309,17 @@ impl AudioSteganography<i16> for WAV16 {
     /// ```
     fn clear_secret_message(
         &self,
-        file: impl Into<PathBuf>,
+        file: impl AsRef<Path>,
         password: impl AsRef<str>,
     ) -> ResultStego<()> {
-        let input_path = file.into();
-        self.validate_file(&input_path)?;
+        self.validate_file(&file)?;
 
-        let mut reader = hound::WavReader::open(&input_path)?;
+        let mut reader = hound::WavReader::open(&file)?;
         let mut samples = Self::read_sample(&mut reader)?;
 
         self.clear_secret_message_binary(&mut samples, password)?;
 
-        let mut writer = hound::WavWriter::create(&input_path, reader.spec())?;
+        let mut writer = hound::WavWriter::create(file, reader.spec())?;
         for sample in samples {
             writer.write_sample(sample)?;
         }
@@ -403,7 +398,7 @@ impl AudioSteganography<i16> for WAV16 {
     /// // Assuming "audio.wav" is a valid 16-bit WAV file:
     /// wav.validate_file(std::path::Path::new("audio.wav")).unwrap();
     /// ```
-    fn validate_file(&self, file: &Path) -> ResultStego<()> {
+    fn validate_file(&self, file: impl AsRef<Path>) -> ResultStego<()> {
         let reader = hound::WavReader::open(file)?;
         if reader.spec().bits_per_sample != 16 {
             return Err(StegoError::InvalidFile(
@@ -494,7 +489,7 @@ mod tests {
     }
 
     fn create_wav_file(
-        path: &PathBuf,
+        path: impl AsRef<Path>,
         bits_per_sample: u16,
         samples: &[i16],
     ) -> Result<(), Box<dyn Error>> {

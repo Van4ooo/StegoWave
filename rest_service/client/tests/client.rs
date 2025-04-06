@@ -5,11 +5,15 @@ use rest_server::startup::run_server;
 use std::error::Error;
 use std::fs;
 use std::net::TcpListener;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use stego_wave::error::StegoWaveClientError;
 use stego_wave::object::StegoWaveClient;
 
-fn create_wav_file(path: &PathBuf, bits: u16, samples: &[i16]) -> Result<(), Box<dyn Error>> {
+fn create_wav_file(
+    path: impl AsRef<Path>,
+    bits: u16,
+    samples: &[i16],
+) -> Result<(), Box<dyn Error>> {
     let spec_file = hound::WavSpec {
         channels: 1,
         sample_rate: 44_100,

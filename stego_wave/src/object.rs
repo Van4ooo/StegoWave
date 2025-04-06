@@ -4,7 +4,7 @@ use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 use std::collections::HashSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 pub type ResultStego<T> = Result<T, StegoError>;
 
@@ -15,8 +15,8 @@ pub trait AudioSteganography<S> {
 
     fn hide_message(
         &self,
-        file_input: impl Into<PathBuf>,
-        file_output: impl Into<PathBuf>,
+        file_input: impl AsRef<Path>,
+        file_output: impl AsRef<Path>,
         message: impl AsRef<str>,
         password: impl AsRef<str>,
     ) -> ResultStego<()>;
@@ -30,7 +30,7 @@ pub trait AudioSteganography<S> {
 
     fn extract_message(
         &self,
-        file: impl Into<PathBuf>,
+        file: impl AsRef<Path>,
         password: impl AsRef<str>,
     ) -> ResultStego<String>;
 
@@ -41,7 +41,7 @@ pub trait AudioSteganography<S> {
     ) -> ResultStego<String>;
     fn clear_secret_message(
         &self,
-        file: impl Into<PathBuf>,
+        file: impl AsRef<Path>,
         password: impl AsRef<str>,
     ) -> ResultStego<()>;
     fn clear_secret_message_binary(
@@ -49,7 +49,7 @@ pub trait AudioSteganography<S> {
         samples: &mut [S],
         password: impl AsRef<str>,
     ) -> ResultStego<()>;
-    fn validate_file(&self, file: &Path) -> ResultStego<()>;
+    fn validate_file(&self, file: impl AsRef<Path>) -> ResultStego<()>;
     fn read_samples_from_byte(&self, byte: Vec<u8>) -> ResultStego<(Vec<S>, AudioFileSpec)>;
     fn write_samples_to_byte(&self, spec: AudioFileSpec, samples: &[S]) -> ResultStego<Vec<u8>>;
     fn default_filename(&self) -> String;
