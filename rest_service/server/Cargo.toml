@@ -15,6 +15,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing = "0.1.41"
 futures = "0.3.31"
 tracing-actix-web = "0.7.15"
+url = { workspace = true }
 serde = { workspace = true }
 config = { workspace = true}
 stego_wave = { workspace = true }

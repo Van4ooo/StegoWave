@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut settings = configuration::Settings::new(CONFIG_FILE)?;
     let stego_wave_setting = settings.get_stego_wave_lib_settings();
-    let listener = TcpListener::bind(settings.address())?;
+    let listener = TcpListener::bind(settings.rest.address()?.authority())?;
 
     run_server(listener, stego_wave_setting)?.await?;
 

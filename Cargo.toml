@@ -26,6 +26,7 @@ tonic = "0.12.3"
 tonic-build = "0.12.3"
 prost = "0.13.4"
 async-trait = "0.1.85"
+url = "2.5.4"
 stego_wave = { path = "stego_wave" }
 rest_client = { path = "rest_service/client" }
 rest_server = { path = "rest_service/server" }

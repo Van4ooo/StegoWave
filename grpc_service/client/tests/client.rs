@@ -108,7 +108,7 @@ async fn full_test_client(
 #[tokio::test]
 async fn test_grpc_client() -> Result<(), Box<dyn Error>> {
     let settings = grpc_server::configuration::Settings::new("../../sw_config")?;
-    let addr: SocketAddr = settings.address().parse()?;
+    let addr: SocketAddr = settings.grpc.address()?.authority().parse()?;
 
     tokio::spawn(run_server(addr, settings.stego_wave_lib));
 

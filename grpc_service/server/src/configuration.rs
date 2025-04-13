@@ -1,5 +1,7 @@
 use serde::Deserialize;
 use stego_wave::configuration::StegoWaveLib;
+use stego_wave::error::StegoWaveClientError;
+use url::Url;
 
 #[derive(Deserialize)]
 pub struct GrpcConfig {
@@ -13,6 +15,13 @@ pub struct Settings {
     pub stego_wave_lib: StegoWaveLib,
 }
 
+impl GrpcConfig {
+    pub fn address(self: &GrpcConfig) -> Result<Url, StegoWaveClientError> {
+        Url::parse(&format!("http://{}:{}", self.host, self.port))
+            .map_err(|err| StegoWaveClientError::UlrInvalid(err.to_string()))
+    }
+}
+
 impl Settings {
     pub fn new(config_file: &str) -> Result<Self, config::ConfigError> {
         let conf = config::Config::builder()
@@ -21,9 +30,5 @@ impl Settings {
             .build()?;
 
         conf.try_deserialize()
-    }
-
-    pub fn address(&self) -> String {
-        format!("{}:{}", self.grpc.host, self.grpc.port)
     }
 }

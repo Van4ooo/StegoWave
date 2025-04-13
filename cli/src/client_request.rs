@@ -81,7 +81,7 @@ pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
             );
         }
         StegoWaveServer::GRPC => {
-            let addr: SocketAddr = settings.grpc_address()?.authority().parse()?;
+            let addr: SocketAddr = settings.grpc.address()?.authority().parse()?;
 
             drop(tokio::spawn(grpc_server::startup::run_server(
                 addr,
@@ -89,7 +89,7 @@ pub async fn run_server(cli: &Cli, settings: &Settings) -> Result<()> {
             )));
         }
         StegoWaveServer::REST => {
-            let listener: TcpListener = TcpListener::bind(settings.rest_address()?.authority())?;
+            let listener: TcpListener = TcpListener::bind(settings.rest.address()?.authority())?;
 
             let server =
                 rest_server::startup::run_server(listener, settings.stego_wave_lib.clone())?;
@@ -184,8 +184,8 @@ async fn get_client(
     server: &StegoWaveServer,
     settings: &Settings,
 ) -> Result<Box<dyn StegoWaveClient>, StegoWaveClientError> {
-    let grpc_address = settings.grpc_address()?;
-    let rest_address = settings.rest_address()?;
+    let grpc_address = settings.grpc.address()?;
+    let rest_address = settings.rest.address()?;
 
     match server {
         StegoWaveServer::Auto => {
