@@ -111,9 +111,17 @@ async fn test_grpc_client() -> Result<(), Box<dyn Error>> {
     let addr: SocketAddr = settings.grpc.address()?.authority().parse()?;
 
     tokio::spawn(run_server(addr, settings.stego_wave_lib));
-
     let addrs = format!("http://{}", addr);
-    let client = StegoWaveGrpcClient::new(addrs).await?;
+
+    let client = match StegoWaveGrpcClient::new(addrs.clone()).await {
+        Ok(client) => client,
+        Err(err) if err.to_string() == "Connection failed" => {
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            StegoWaveGrpcClient::new(addrs).await?
+        }
+        Err(_) => panic!(),
+    };
+
     full_test_client(client, "grpc.wav").await?;
     Ok(())
 }
