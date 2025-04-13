@@ -218,9 +218,8 @@ mod tests {
     use super::{ByteIterator, UniqueRandomIndices};
 
     fn inner_func(iter: &mut UniqueRandomIndices) {
-        for x in iter {
+        if let Some(x) = iter.next() {
             assert_eq!(x, 142);
-            break;
         }
     }
 
@@ -229,9 +228,8 @@ mod tests {
         let mut iter = UniqueRandomIndices::new(200, "_", 70);
         let ref_iter = &mut iter;
 
-        for x in ref_iter {
+        if let Some(x) = ref_iter.next() {
             assert_eq!(x, 155);
-            break;
         }
 
         inner_func(&mut iter);

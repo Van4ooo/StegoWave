@@ -33,7 +33,7 @@ jobs:
       uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Run Clippy
-      run: cargo clippy --all-targets -- -D warnings
+      run:  cargo update zip --precise 2.2.2 && cargo clippy --all-targets -- -D warnings
     
     - name: Check formatting
       run: cargo fmt --all --check

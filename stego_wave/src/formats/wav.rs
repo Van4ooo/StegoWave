@@ -463,7 +463,7 @@ mod tests {
                 .settings(Settings::new(CONFIG_FILE).unwrap())
                 .build()?;
 
-            wav16.hide_message_binary(sample, &format!("{i} test {i}"), "_")?;
+            wav16.hide_message_binary(sample, format!("{i} test {i}"), "_")?;
             let res = wav16.extract_message_binary(sample, "_")?;
             assert_eq!(res, format!("{i} test {i}"));
         }
@@ -563,7 +563,7 @@ mod tests {
 
         match res {
             Err(StegoError::IncorrectPassword) => (),
-            _ => assert!(false),
+            _ => panic!(),
         }
 
         let _ = fs::remove_file(input_path);
@@ -594,8 +594,8 @@ mod tests {
         wav16.clear_secret_message(&output_path, password)?;
 
         match wav16.extract_message(&output_path, password) {
-            Err(StegoError::IncorrectPassword) => assert!(true),
-            _ => assert!(false),
+            Err(StegoError::IncorrectPassword) => (),
+            _ => panic!(),
         }
 
         let _ = fs::remove_file(input_path);
@@ -619,7 +619,7 @@ mod tests {
 
         match res {
             Err(StegoError::InvalidFile(err)) => assert_eq!(err, "Only 16-bit WAV file supported"),
-            _ => assert!(false),
+            _ => panic!(),
         }
 
         let _ = fs::remove_file(input_path);
