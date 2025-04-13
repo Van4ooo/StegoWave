@@ -450,6 +450,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use std::error::Error;
     use std::fs;
+    use std::path::PathBuf;
 
     const CONFIG_FILE: &str = "../sw_config.toml";
 
