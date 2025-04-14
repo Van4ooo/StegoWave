@@ -1,0 +1,19 @@
+[package]
+name = "stego_wave"
+description = "Library for stenography of audio files"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+rand = "0.8.5"
+rand_chacha = "0.3.1"
+derive_builder = "0.20.2"
+thiserror = "2.0.11"
+async-trait = { workspace = true }
+hound = { workspace = true }
+serde = { workspace = true }
+config = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"

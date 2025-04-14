@@ -1,0 +1,22 @@
+[package]
+name = "rest_client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+reqwest = { version = "0.12.12", features = ["multipart", "json"] }
+url = "2.5.4"
+async-trait = { workspace = true }
+tokio = { workspace = true }
+stego_wave = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+hound = { workspace = true }
+rest_server = { workspace = true }
+
+[lib]
+name = "rest_client"
+path = "src/lib.rs"

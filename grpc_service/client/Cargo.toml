@@ -1,0 +1,26 @@
+[package]
+name = "grpc_client"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+tokio-stream = "0.1.17"
+async-trait = { workspace = true }
+tonic = { workspace = true }
+prost = { workspace = true }
+stego_wave = { workspace = true }
+
+[build-dependencies]
+tonic-build = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "1.4.1"
+hound = { workspace = true }
+config = { workspace = true }
+tokio = { workspace = true }
+grpc_server = { workspace = true }
